@@ -26,6 +26,8 @@ jobs:
           python-version: "3.12"
       - name: Download game, quest and loot data
         run: python download_data.py
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
       - name: Build database
         run: python build_db.py
       - name: Export page data and API

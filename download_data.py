@@ -27,7 +27,12 @@ UA = {"User-Agent": "wow-forever-kb/1.0 (personal use)"}
 
 
 def get(url):
-    req = urllib.request.Request(url, headers=UA)
+    headers = dict(UA)
+    # GitHub's API rate-limits anonymous calls per IP; shared CI machines hit it, so use the
+    # job's token when there is one (GitHub Actions sets GITHUB_TOKEN via the workflow).
+    if url.startswith("https://api.github.com/") and os.environ.get("GITHUB_TOKEN"):
+        headers["Authorization"] = "Bearer " + os.environ["GITHUB_TOKEN"]
+    req = urllib.request.Request(url, headers=headers)
     with urllib.request.urlopen(req, timeout=120) as r:
         return r.read()
 
