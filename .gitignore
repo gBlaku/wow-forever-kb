@@ -1,0 +1,9 @@
+# Downloaded and generated data: rebuilt by the GitHub Action (and locally by the scripts)
+data/
+site/
+wow_forever.db
+wow_forever.db.tmp
+web/items.json
+__pycache__/
+*.pyc
+.claude/

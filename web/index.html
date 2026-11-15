@@ -1,0 +1,528 @@
+<meta charset="utf-8">
+<title>WoW Forever Armory</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@500;700&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout: filter bar on top; results list on the left, a game-style item tooltip pinned on the right (bottom sheet on phones). */
+:root {
+  --bg: #eef0f4; --surface: #ffffff; --line: #d7dbe4; --fg: #171b24; --muted: #5d6577;
+  --accent: #8a6417; --accent-soft: #f3ead6; --hover: #f5f6f9; --sel: #e9eefb;
+  --q0: #6b6b6b; --q1: #1d2230; --q2: #187a0a; --q3: #0062c4; --q4: #8a2bd1; --q5: #c45f00; --q6: #a08a3c; --q7: #0a8fb3;
+  /* The tooltip is always the dark in-game style, in both themes */
+  --tip-bg: #0b1020; --tip-line: #3a4258; --tip-fg: #f2f2f2; --tip-muted: #9aa3b5;
+  --tip-green: #1eff00; --tip-gold: #ffd100; --tip-set: #ffd27a;
+  --tq0: #9d9d9d; --tq1: #ffffff; --tq2: #1eff00; --tq3: #3d9bff; --tq4: #b65cf5; --tq5: #ff8000; --tq6: #e6cc80; --tq7: #00ccff;
+  --font-display: "Alegreya SC", Georgia, "Times New Roman", serif;
+  --font-ui: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --radius: 6px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f1218; --surface: #171b24; --line: #2a3140; --fg: #e7e9ee; --muted: #8f97a8;
+  --accent: #d4a64a; --accent-soft: #2a2416; --hover: #1d2230; --sel: #1f2940;
+  --q0: #9d9d9d; --q1: #e6e6e6; --q2: #1eff00; --q3: #3d9bff; --q4: #b65cf5; --q5: #ff8000; --q6: #e6cc80; --q7: #00ccff;
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0f1218; --surface: #171b24; --line: #2a3140; --fg: #e7e9ee; --muted: #8f97a8;
+  --accent: #d4a64a; --accent-soft: #2a2416; --hover: #1d2230; --sel: #1f2940;
+  --q0: #9d9d9d; --q1: #e6e6e6; --q2: #1eff00; --q3: #3d9bff; --q4: #b65cf5; --q5: #ff8000; --q6: #e6cc80; --q7: #00ccff;
+  color-scheme: dark }
+
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-ui); font-size: 14px; line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 40px }
+.wrap { max-width: 1280px; margin: 0 auto; display: grid; gap: 16px }
+header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 24px }
+h1 { font-family: var(--font-display); font-weight: 700; font-size: 1.9rem; margin: 0; letter-spacing: .01em; text-wrap: balance }
+h1 span { color: var(--accent) }
+.meta { color: var(--muted); font-size: 12.5px; font-variant-numeric: tabular-nums }
+
+.filters { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px }
+.field { display: grid; gap: 4px; min-width: 0 }
+.field label, .lbl { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted) }
+.field.wide { grid-column: span 2 }
+select, input[type="text"], input[type="number"] { width: 100%; font: inherit; color: var(--fg); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 5px; padding: 7px 8px; min-width: 0 }
+select:focus-visible, input:focus-visible, button:focus-visible, .row:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px }
+.checks { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; grid-column: 1 / -1; font-size: 13px; color: var(--muted) }
+.checks label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer }
+.presets { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto }
+.chip { font: inherit; font-size: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); border-radius: 999px; padding: 3px 10px; cursor: pointer }
+.chip:hover { border-color: var(--accent) }
+
+.main { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; align-items: start }
+.results { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); min-width: 0 }
+.rhead { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 6px 12px; padding: 10px 14px; border-bottom: 1px solid var(--line) }
+.count { font-weight: 600; font-variant-numeric: tabular-nums }
+.hiddenNote { color: var(--muted); font-size: 12.5px }
+.cols, .row { display: grid; grid-template-columns: minmax(0, 1fr) 44px 44px 118px minmax(0, 0.9fr); gap: 12px; align-items: center; padding: 8px 14px }
+.cols { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); border-bottom: 1px solid var(--line) }
+.num { text-align: right; font-variant-numeric: tabular-nums }
+.row { border-bottom: 1px solid var(--line); cursor: pointer }
+.row:hover { background: var(--hover) }
+.row[aria-selected="true"] { background: var(--sel); box-shadow: inset 3px 0 0 var(--accent) }
+.nm { font-weight: 600; overflow-wrap: anywhere }
+.sub { color: var(--muted); font-size: 12.5px }
+.stats { font-size: 12.5px; color: var(--muted); overflow-wrap: anywhere }
+.stats b { color: var(--fg); font-weight: 600 }
+.dps { font-variant-numeric: tabular-nums; text-align: right }
+.dps small { display: block; color: var(--muted); font-size: 11.5px }
+.q0 { color: var(--q0) } .q1 { color: var(--q1) } .q2 { color: var(--q2) } .q3 { color: var(--q3) } .q4 { color: var(--q4) } .q5 { color: var(--q5) } .q6 { color: var(--q6) } .q7 { color: var(--q7) }
+.more { display: flex; justify-content: center; padding: 12px }
+.btn { font: inherit; font-weight: 600; border: 1px solid var(--accent); color: var(--accent); background: transparent; border-radius: 5px; padding: 7px 14px; cursor: pointer }
+.btn:hover { background: var(--accent-soft) }
+.empty { padding: 28px 14px; color: var(--muted); text-align: center }
+
+.detail { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); display: grid; gap: 10px }
+.tip { background: var(--tip-bg); color: var(--tip-fg); border: 1px solid var(--tip-line); border-radius: var(--radius);
+  padding: 12px 14px; font-size: 13.5px; line-height: 1.4; box-shadow: 0 6px 20px rgba(0,0,0,.25) }
+.tip .t-name { font-weight: 700; font-size: 15.5px; margin-bottom: 2px }
+.tip .t-gold { color: var(--tip-gold) }
+.tip .t-green { color: var(--tip-green) }
+.tip .t-set { color: var(--tip-set) }
+.tip .t-muted { color: var(--tip-muted) }
+.tip .lr { display: flex; justify-content: space-between; gap: 12px }
+.tip .gap { height: 6px }
+.tip .tq0 { color: var(--tq0) } .tip .tq1 { color: var(--tq1) } .tip .tq2 { color: var(--tq2) } .tip .tq3 { color: var(--tq3) } .tip .tq4 { color: var(--tq4) } .tip .tq5 { color: var(--tq5) } .tip .tq6 { color: var(--tq6) } .tip .tq7 { color: var(--tq7) }
+.coin { font-variant-numeric: tabular-nums }
+.coin i { font-style: normal; display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin: 0 4px 0 2px; vertical-align: 0 }
+.coin .g { background: #e8c25a } .coin .s { background: #c9ced6 } .coin .c { background: #c27a46 }
+.links { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; font-size: 12.5px; color: var(--muted) }
+.links a { color: var(--accent); font-weight: 600 }
+.closeSheet { display: none }
+.note { font-size: 12px; color: var(--muted) }
+.foot { color: var(--muted); font-size: 12.5px; max-width: 75ch; display: grid; gap: 6px }
+.foot strong { color: var(--fg) }
+.loading { padding: 40px 14px; text-align: center; color: var(--muted) }
+.tabs { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--surface) }
+.tab { font: inherit; font-weight: 600; border: 0; background: transparent; color: var(--muted); padding: 7px 16px; cursor: pointer }
+.tab[aria-selected="true"] { background: var(--accent-soft); color: var(--accent) }
+.questsMode .itemOnly { display: none }
+.field.questOnly, .questOnly { display: none }
+.questsMode .questOnly { display: grid }
+.src { font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--accent) }
+.howto { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; display: grid; gap: 6px; font-size: 13px }
+.howto .lbl { margin-bottom: 2px }
+.howto div { overflow-wrap: anywhere }
+.howto b { font-weight: 600 }
+.quest { padding: 10px 14px; border-bottom: 1px solid var(--line); display: grid; gap: 4px }
+.qhead { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline }
+.qlvl { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--accent); min-width: 2.2em }
+.qname { font-weight: 600 }
+.qname a { color: inherit; text-decoration: none } .qname a:hover { text-decoration: underline }
+.qmeta { color: var(--muted); font-size: 12.5px }
+.rewards { display: grid; gap: 2px; padding-left: 2.6em }
+.reward { display: flex; flex-wrap: wrap; gap: 2px 10px; align-items: baseline; cursor: pointer; border-radius: 4px; padding: 2px 6px; margin-left: -6px; background: transparent; border: 0; font: inherit; text-align: left; color: inherit }
+.reward:hover { background: var(--hover) }
+.reward .rn { font-weight: 600 }
+.reward .rs { color: var(--muted); font-size: 12.5px }
+.reward.no .rn { text-decoration: line-through; opacity: .7 }
+.est { font-size: 10.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); border: 1px solid var(--line); border-radius: 3px; padding: 0 4px; margin-left: 4px; vertical-align: 1px; white-space: nowrap }
+.estNote { font-size: 12px; color: var(--muted); border-left: 3px solid var(--accent); padding: 4px 8px; background: var(--accent-soft); border-radius: 0 4px 4px 0 }
+
+@media (max-width: 960px) {
+  .main { grid-template-columns: minmax(0, 1fr) }
+  .detail { position: fixed; left: 0; right: 0; bottom: 0; top: auto; z-index: 20; max-height: 70vh; overflow: auto;
+    background: var(--bg); border-top: 1px solid var(--line); box-shadow: 0 -8px 24px rgba(0,0,0,.25);
+    padding: 12px max(16px, env(safe-area-inset-right, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)) }
+  .detail.idle { display: none }
+  .closeSheet { display: inline-block }
+}
+@media (max-width: 640px) {
+  .field.wide { grid-column: 1 / -1 }
+  .filters { grid-template-columns: 1fr 1fr }
+  .cols { display: none }
+  .row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "n d" "s s"; gap: 4px 12px }
+  .row .c-name { grid-area: n } .row .c-dps { grid-area: d } .row .c-stats { grid-area: s }
+  .row .c-req, .row .c-ilvl { display: none }
+  .presets { margin-left: 0 }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>WoW Forever <span>Armory</span></h1>
+    <div class="tabs" role="tablist" aria-label="View">
+      <button type="button" class="tab" role="tab" id="tab-items" aria-selected="true">Items</button>
+      <button type="button" class="tab" role="tab" id="tab-quests" aria-selected="false">Quests</button>
+    </div>
+    <div class="meta" id="meta">Loading item data…</div>
+  </header>
+
+  <form class="filters" id="filters" autocomplete="off">
+    <div class="field wide"><label for="f-name" id="f-name-label">Item, boss or zone</label><input type="text" id="f-name" placeholder="e.g. Ravager, Herod or Uldaman"></div>
+    <div class="field"><label for="f-class">Class</label><select id="f-class"></select></div>
+    <div class="field"><label for="f-level">Your level</label><input type="number" id="f-level" min="1" max="60" placeholder="any"></div>
+    <div class="field"><label for="f-minlevel">Min. level</label><input type="number" id="f-minlevel" min="0" max="60" placeholder="0"></div>
+    <div class="field questOnly"><label for="f-faction">Faction</label><select id="f-faction"><option value="">Both</option><option value="Alliance">Alliance</option><option value="Horde">Horde</option></select></div>
+    <div class="field"><label for="f-slot">Slot</label><select id="f-slot"></select></div>
+    <div class="field itemOnly"><label for="f-type">Type</label><select id="f-type"></select></div>
+    <div class="field itemOnly"><label for="f-source">Obtained from</label><select id="f-source">
+      <option value="">Anywhere</option><option value="quest">Quest reward</option><option value="drop">Creature drop</option>
+      <option value="vendor">Vendor</option><option value="crafted">Crafting</option><option value="object">Chest / object</option>
+      <option value="none">Unknown source</option></select></div>
+    <div class="field itemOnly"><label for="f-quality">Min. quality</label><select id="f-quality"></select></div>
+    <div class="field itemOnly"><label for="f-stat">Must have stat</label><select id="f-stat"></select></div>
+    <div class="field itemOnly"><label for="f-sort">Sort by</label><select id="f-sort"></select></div>
+    <div class="checks">
+      <label class="itemOnly"><input type="checkbox" id="f-anyilvl"> Show items meant for higher levels</label>
+      <label><input type="checkbox" id="f-unusable"> Include items my class can't use</label>
+      <div class="presets" aria-label="Quick searches">
+        <button type="button" class="chip" data-preset="hunter1h">Hunter 40 · one-hand</button>
+        <button type="button" class="chip" data-preset="hunterranged">Hunter 40 · ranged</button>
+        <button type="button" class="chip" data-preset="huntermail">Hunter 40 · mail chest</button>
+        <button type="button" class="chip" data-preset="hunterquests">Hunter 40 · quest rewards</button>
+        <button type="button" class="chip" data-preset="reset">Reset</button>
+      </div>
+    </div>
+  </form>
+
+  <div class="main">
+    <section class="results" aria-label="Results">
+      <div class="rhead"><span class="count" id="count"></span><span class="hiddenNote" id="hiddenNote"></span></div>
+      <div class="cols itemOnly" aria-hidden="true"><span>Item</span><span class="num">Req</span><span class="num">iLvl</span><span class="num">DPS / Armor</span><span>Stats</span></div>
+      <div id="list" role="listbox" aria-label="Items"><div class="loading">Loading 17,748 items…</div></div>
+      <div class="more" id="moreWrap" hidden><button type="button" class="btn" id="more">Show 100 more</button></div>
+    </section>
+    <aside class="detail idle" id="detail" aria-live="polite">
+      <div class="note" id="detailHint">Select an item to see its tooltip.</div>
+    </aside>
+  </div>
+
+  <footer class="foot">
+    <div><strong>Data &amp; API.</strong> All of this data is free to download as JSON, CSV or SQLite, with docs and the code that builds it, at <a href="https://github.com/gBlaku/wow-forever-kb" target="_blank" rel="noopener">github.com/gBlaku/wow-forever-kb</a>.</div>
+    <div><strong>Where this comes from.</strong> Item data is read from the WoW Forever game client's own data tables (build <span id="build">…</span>). Stats and weapon damage are calculated with Blizzard's item-budget formulas and match Wowhead on the items checked. DPS marked with ~ is approximate. Crafting recipes also come from the client data.</div>
+    <div><strong>Quests and vendors</strong> come from the Questie addon's WoW Forever database. <strong>Creature and chest loot</strong>, with drop chances, comes from the vmangos Classic world database. Both are Classic content, so quests and drops added or changed in WoW Forever aren't listed yet. Use the Wowhead link on each item to check.</div>
+    <div><strong>Classic data.</strong> Blizzard hides many Forever items until a player finds them in-game. Where the item existed in Classic, its name, level and stats are filled in from Classic and marked "Classic data". Damage and armor use the Forever formulas. About 7,500 new Forever items have no data anywhere yet.</div>
+    <div><strong>Level filter.</strong> Each item is matched to the level it is really for: its required level, or for items with no requirement, the level of the quest that rewards it or the creature that drops it (otherwise item level − 5). With your level set, items for more than 2 levels above you are left out unless you tick "Show items meant for higher levels". Weapon and armor rules follow Classic: Hunters and Shamans wear mail from 40, Warriors and Paladins wear plate from 40.</div>
+  </footer>
+</div>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const CLASSES = { Warrior: 1, Paladin: 2, Hunter: 3, Rogue: 4, Priest: 5, Shaman: 7, Mage: 8, Warlock: 9, Druid: 11 };
+  const QUAL = ["Poor", "Common", "Uncommon", "Rare", "Epic", "Legendary", "Artifact", "Heirloom"];
+  const SLOT_GROUPS = {
+    "": { label: "Any equippable slot" },
+    onehand: { label: "One-hand weapons", slots: ["One-Hand", "Main Hand", "Off Hand"], weapon: true },
+    mainhand: { label: "Main hand", slots: ["One-Hand", "Main Hand"], weapon: true },
+    offhand: { label: "Off hand (incl. shields)", slots: ["One-Hand", "Off Hand", "Held In Off-hand", "Shield"] },
+    twohand: { label: "Two-hand weapons", slots: ["Two-Hand"], weapon: true },
+    weapon: { label: "All melee weapons", slots: ["One-Hand", "Main Hand", "Off Hand", "Two-Hand"], weapon: true },
+    ranged: { label: "Ranged (bow, gun, thrown, wand)", slots: ["Ranged", "Thrown"], weapon: true },
+    Head: {}, Neck: {}, Shoulder: {}, Back: {}, Chest: {}, Wrist: {}, Hands: {}, Waist: {}, Legs: {}, Feet: {},
+    Finger: { label: "Finger (rings)" }, Trinket: {}, Shield: {}, Relic: { label: "Relic (libram, idol, totem)" },
+    Ammo: {}, Bag: {}, "Non-equippable": { label: "Non-equippable (consumables, recipes…)" }
+  };
+  for (const [k, v] of Object.entries(SLOT_GROUPS)) { if (!v.slots && k) v.slots = [k]; if (!v.label) v.label = k; }
+  const STAT_NAMES = { agility: "Agility", strength: "Strength", stamina: "Stamina", intellect: "Intellect", spirit: "Spirit",
+    attack_power: "Attack Power", ranged_attack_power: "Ranged Attack Power", hit: "Hit", crit: "Critical Strike", haste: "Haste",
+    spell_power: "Spell Power", healing: "Healing", spell_damage: "Spell Damage", mp5: "Mana per 5 sec.", defense: "Defense",
+    dodge: "Dodge", parry: "Parry", block: "Block", block_value: "Block Value", bonus_armor: "Armor",
+    fire_res: "Fire Resistance", frost_res: "Frost Resistance", nature_res: "Nature Resistance", shadow_res: "Shadow Resistance", arcane_res: "Arcane Resistance" };
+  const STAT_SHORT = { agility: "Agi", strength: "Str", stamina: "Sta", intellect: "Int", spirit: "Spi", attack_power: "AP",
+    ranged_attack_power: "RAP", hit: "Hit", crit: "Crit", haste: "Haste", spell_power: "SP", healing: "Heal", spell_damage: "SpDmg",
+    mp5: "MP5", defense: "Def", dodge: "Dodge", parry: "Parry", block: "Block", block_value: "BlkVal", bonus_armor: "Armor",
+    fire_res: "FireR", frost_res: "FrostR", nature_res: "NatR", shadow_res: "ShadR", arcane_res: "ArcR" };
+  const WHITE_STATS = new Set(["agility", "strength", "stamina", "intellect", "spirit", "bonus_armor", "fire_res", "frost_res", "nature_res", "shadow_res", "arcane_res"]);
+  const ALWAYS_OK_SLOTS = new Set(["Neck", "Finger", "Trinket", "Back", "Shirt", "Tabard", "Held In Off-hand"]);
+  const PRESETS = {
+    hunter1h: { cls: "Hunter", level: 40, slot: "onehand", sort: "dps", quality: 2 },
+    hunterranged: { cls: "Hunter", level: 40, slot: "ranged", sort: "dps", quality: 2 },
+    huntermail: { cls: "Hunter", level: 40, slot: "Chest", type: "Mail", sort: "agility", quality: 2 },
+    hunterquests: { mode: "quests", cls: "Hunter", level: 40, slot: "", sort: "dps", quality: 2 },
+    reset: { cls: "", level: "", slot: "", sort: "ilvl", quality: 2 }
+  };
+  const SRC_LABEL = { quest: "Quest", drop: "Drop", vendor: "Vendor", crafted: "Crafted", object: "Chest", container: "Container" };
+  const PAGE = 100, QPAGE = 50;
+
+  let DATA = null, items = [], byId = new Map(), quests = [], STATS = [], results = [], shown = 0, selectedId = null, mode = "items";
+
+  function fill(sel, opts) { sel.innerHTML = opts.map(([v, t]) => `<option value="${esc(v)}">${esc(t)}</option>`).join(""); }
+  function esc(s) { return String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+
+  function initControls() {
+    fill($("f-class"), [["", "Any class"], ...Object.keys(CLASSES).map((c) => [c, c])]);
+    fill($("f-slot"), Object.entries(SLOT_GROUPS).map(([k, v]) => [k, v.label]));
+    fill($("f-quality"), QUAL.slice(0, 6).map((q, i) => [i, q + (i ? " +" : " (all)")]));
+    fill($("f-stat"), [["", "Any"], ...STATS.map((s) => [s, STAT_NAMES[s]])]);
+    fill($("f-sort"), [["dps", "DPS (weapons)"], ["ilvl", "Item level"], ["req", "Required level"], ["armor", "Armor"],
+      ["name", "Name"], ...STATS.map((s) => [s, STAT_NAMES[s]])]);
+    updateTypes();
+  }
+
+  function updateTypes() {
+    const g = SLOT_GROUPS[$("f-slot").value];
+    const keep = $("f-type").value;
+    const set = new Set();
+    for (const it of items) if (!g.slots || g.slots.includes(it.slot)) if (it.sub) set.add(it.sub);
+    fill($("f-type"), [["", "Any"], ...[...set].sort().map((s) => [s, s])]);
+    if (set.has(keep)) $("f-type").value = keep;
+  }
+
+  function readFilters() {
+    return {
+      name: $("f-name").value.trim().toLowerCase(), cls: $("f-class").value,
+      level: parseInt($("f-level").value, 10) || 0, minLevel: parseInt($("f-minlevel").value, 10) || 0,
+      slot: $("f-slot").value, type: $("f-type").value, quality: parseInt($("f-quality").value, 10) || 0,
+      stat: $("f-stat").value, sort: $("f-sort").value, anyIlvl: $("f-anyilvl").checked, unusable: $("f-unusable").checked,
+      source: $("f-source").value, faction: $("f-faction").value, mode
+    };
+  }
+  function setMode(m) {
+    mode = m === "quests" ? "quests" : "items";
+    document.querySelector(".wrap").classList.toggle("questsMode", mode === "quests");
+    $("tab-items").setAttribute("aria-selected", mode === "items" ? "true" : "false");
+    $("tab-quests").setAttribute("aria-selected", mode === "quests" ? "true" : "false");
+    $("f-name-label").textContent = mode === "quests" ? "Quest, zone or reward" : "Item, boss or zone";
+    $("f-name").placeholder = mode === "quests" ? "e.g. Desolace or Silent Hunter" : "e.g. Ravager, Herod or Uldaman";
+  }
+  function applyFilters(f) {
+    setMode(f.mode || "items");
+    $("f-source").value = f.source || ""; $("f-faction").value = f.faction || "";
+    $("f-name").value = f.name || ""; $("f-class").value = f.cls || ""; $("f-level").value = f.level || "";
+    $("f-minlevel").value = f.minLevel || ""; $("f-slot").value = f.slot || ""; updateTypes(); $("f-type").value = f.type || "";
+    $("f-quality").value = f.quality ?? 2; $("f-stat").value = f.stat || ""; $("f-sort").value = f.sort || "dps";
+    $("f-anyilvl").checked = !!f.anyIlvl; $("f-unusable").checked = !!f.unusable;
+  }
+
+  function canUse(it, cls, level) {
+    const bit = 1 << (CLASSES[cls] - 1);
+    if (!(it.mask === -1 || it.mask === 0 || (it.mask & bit))) return false;
+    if (it.ic === "Weapon") return (DATA.proficiency[cls] || []).includes(it.sub);
+    if (it.ic === "Armor") {
+      if (ALWAYS_OK_SLOTS.has(it.slot)) return true;
+      const lvl = (DATA.armor[cls] || {})[it.sub];
+      return lvl !== undefined && lvl <= (level || 60);
+    }
+    return true;
+  }
+
+  function run() {
+    const f = readFilters();
+    try { localStorage.setItem("wfa-filters", JSON.stringify(f)); } catch (e) {}
+    if (mode === "quests") return runQuests(f);
+    const g = SLOT_GROUPS[f.slot];
+    const slots = g.slots ? new Set(g.slots) : null;
+    const st = f.stat ? STATS.indexOf(f.stat) : -1;
+    results = items.filter((it) => {
+      if (f.name && !it.lname.includes(f.name) && !it.lsrc.includes(f.name)) return false;
+      if (slots ? !slots.has(it.slot) : (!f.name && it.slot === "Non-equippable")) return false;
+      if (it.q < f.quality) return false;
+      if (f.type && it.sub !== f.type) return false;
+      if (f.source && (f.source === "none" ? it.srcTypes : !(it.srcTypes || "").includes(f.source))) return false;
+      // it.lvl = required level, or the quest/drop level for items with no requirement
+      if (f.level) { if (it.req > f.level) return false; if (!f.anyIlvl && it.lvl > f.level + 2) return false; }
+      if (f.minLevel && it.lvl < f.minLevel) return false;
+      if (st >= 0 && !(it.sv[f.stat] > 0)) return false;
+      if (f.cls && !f.unusable && !canUse(it, f.cls, f.level)) return false;
+      return true;
+    });
+    const key = f.sort;
+    const val = (it) => key === "dps" ? (it.dps ?? -1) : key === "ilvl" ? it.ilvl : key === "req" ? it.req : key === "armor" ? (it.armor ?? -1) : (it.sv[key] ?? -1);
+    if (key === "name") results.sort((a, b) => a.name.localeCompare(b.name));
+    else results.sort((a, b) => (val(b) - val(a)) || (b.ilvl - a.ilvl) || (b.q - a.q) || a.name.localeCompare(b.name));
+    shown = 0;
+    $("list").innerHTML = "";
+    $("count").textContent = `${results.length.toLocaleString()} item${results.length === 1 ? "" : "s"}`;
+    const hid = g.slots ? g.slots.reduce((n, s) => n + (DATA.hidden[s] || 0), 0) : 0;
+    $("hiddenNote").textContent = hid ? `+ ${hid.toLocaleString()} new Forever items in this slot are still hidden (all levels)` : "";
+    if (!results.length) $("list").innerHTML = `<div class="empty">No items match. Try lowering the minimum quality, clearing the type, or ticking "Show items far above my level".</div>`;
+    showMore();
+    if (results.length && (!selectedId || !results.some((r) => r.id === selectedId)) && window.matchMedia("(min-width: 961px)").matches) select(results[0].id);
+  }
+
+  function runQuests(f) {
+    const g = SLOT_GROUPS[f.slot];
+    const slots = g.slots ? new Set(g.slots) : null;
+    const lo = f.minLevel || (f.level ? Math.max(1, f.level - 5) : 0);
+    results = [];
+    for (const q of quests) {
+      if (f.level && (q.req > f.level || q.qlvl > f.level + 2)) continue;
+      if (lo && q.qlvl < lo) continue;
+      if (f.faction && q.faction !== "Both" && q.faction !== f.faction) continue;
+      if (f.cls && q.classes && !q.classes.includes(f.cls)) continue;
+      let rw = q.rewards.map((id) => byId.get(id)).filter(Boolean);
+      if (slots) rw = rw.filter((it) => slots.has(it.slot));
+      if (!rw.length) continue;
+      if (f.name && !(q.lname.includes(f.name) || (q.zone || "").toLowerCase().includes(f.name) || rw.some((it) => it.lname.includes(f.name)))) continue;
+      results.push({ q, rw });
+    }
+    shown = 0;
+    $("list").innerHTML = "";
+    $("count").textContent = `${results.length.toLocaleString()} quest${results.length === 1 ? "" : "s"} with item rewards`;
+    $("hiddenNote").textContent = f.level ? `Quest level ${lo || 1}–${f.level + 2}` : "";
+    if (!results.length) $("list").innerHTML = `<div class="empty">No quests match. Try clearing the slot or faction, or widening the level range.</div>`;
+    showMore();
+  }
+
+  function questHtml({ q, rw }, f) {
+    const meta = [q.zone || "Unknown zone", q.faction === "Both" ? "Both factions" : q.faction, `pick up at ${q.req}`]
+      .concat(q.classes ? [`${q.classes} only`] : []);
+    const people = q.from ? `<div class="qmeta">From ${esc(q.from)}${q.to && q.to !== q.from ? `, turn in to ${esc(q.to)}` : ""}</div>` : "";
+    const rows = rw.map((it) => {
+      const ok = !f.cls || !["Weapon", "Armor"].includes(it.ic) || canUse(it, f.cls, f.level);
+      const bits = [it.slot === "Non-equippable" ? it.ic : `${it.slot}${it.sub && it.sub !== it.slot ? " " + it.sub : ""}`];
+      if (it.dps != null) bits.push(`${it.dps.toFixed(1)} dps`);
+      if (it.armor) bits.push(`${it.armor} armor`);
+      const st = it.st.map(([i, v]) => `${v > 0 ? "+" : ""}${v} ${STAT_SHORT[STATS[i]]}`).join(", ");
+      if (st) bits.push(st);
+      return `<button type="button" class="reward${ok ? "" : " no"}" data-id="${it.id}"><span class="rn q${it.q}">${esc(it.name)}</span><span class="rs">${esc(bits.join(" · "))}${ok ? "" : " · can't use"}</span></button>`;
+    }).join("");
+    return `<div class="quest"><div class="qhead"><span class="qlvl">${q.qlvl}</span><span class="qname"><a href="https://www.wowhead.com/forever/quest=${q.id}" target="_blank" rel="noopener">${esc(q.name)}</a></span><span class="qmeta">${esc(meta.join(" · "))}</span></div>${people}<div class="rewards">${rows}</div></div>`;
+  }
+
+  function statSummary(it) {
+    const parts = [];
+    for (const [i, v] of it.st) parts.push(`<b>${v > 0 ? "+" : ""}${v}</b> ${STAT_SHORT[STATS[i]]}`);
+    if (it.other) parts.push(esc(it.other));
+    let s = parts.join(", ");
+    if (it.fx) s += (s ? " · " : "") + `<span title="${esc(it.fx)}">${esc(it.fx.split(":")[0])} effect</span>`;
+    return s || "—";
+  }
+
+  function showMore() {
+    if (mode === "quests") {
+      const f = readFilters();
+      $("list").insertAdjacentHTML("beforeend", results.slice(shown, shown + QPAGE).map((r) => questHtml(r, f)).join(""));
+      shown = Math.min(results.length, shown + QPAGE);
+      $("moreWrap").hidden = shown >= results.length;
+      $("more").textContent = `Show ${Math.min(QPAGE, results.length - shown)} more`;
+      return;
+    }
+    const frag = document.createDocumentFragment();
+    for (const it of results.slice(shown, shown + PAGE)) {
+      const row = document.createElement("div");
+      row.className = "row"; row.tabIndex = 0; row.setAttribute("role", "option"); row.dataset.id = it.id;
+      row.setAttribute("aria-selected", it.id === selectedId ? "true" : "false");
+      const dps = it.dps != null ? `${it.approx ? "~" : ""}${it.dps.toFixed(1)}<small>${it.min}–${it.max} @ ${it.speed.toFixed(2)}</small>`
+        : it.armor ? `${it.armor}<small>armor</small>` : "—";
+      row.innerHTML = `<div class="c-name"><div class="nm q${it.q}">${esc(it.name)}${it.est ? `<span class="est" title="Hidden in WoW Forever so far. Name and stats are from Classic.">Classic data</span>` : ""}</div><div class="sub">${esc(it.slot)}${it.sub && it.sub !== it.slot ? " · " + esc(it.sub) : ""}${it.mask > 0 && it.cl ? " · " + esc(it.cl) : ""}${it.srcTypes ? ` · <span class="src">${esc(it.srcTypes.split(",").map((s) => SRC_LABEL[s] || s).join(", "))}</span>` : ""}</div></div>
+        <div class="num c-req">${it.req || "–"}</div><div class="num c-ilvl">${it.ilvl}</div>
+        <div class="dps c-dps">${dps}</div><div class="stats c-stats">${statSummary(it)}</div>`;
+      frag.appendChild(row);
+    }
+    $("list").appendChild(frag);
+    shown = Math.min(results.length, shown + PAGE);
+    $("moreWrap").hidden = shown >= results.length;
+    $("more").textContent = `Show ${Math.min(PAGE, results.length - shown)} more`;
+  }
+
+  function coins(c) {
+    if (!c) return "";
+    const g = Math.floor(c / 10000), s = Math.floor(c / 100) % 100, cp = c % 100;
+    return `<span class="coin">${g ? `${g}<i class="g"></i>` : ""}${g || s ? `${s}<i class="s"></i>` : ""}${cp}<i class="c"></i></span>`;
+  }
+
+  function select(id) {
+    selectedId = id;
+    for (const r of $("list").querySelectorAll(".row")) r.setAttribute("aria-selected", +r.dataset.id === id ? "true" : "false");
+    const it = byId.get(id);
+    if (!it) return;
+    const L = [];
+    L.push(`<div class="t-name tq${it.q}">${esc(it.name)}</div>`);
+    L.push(`<div class="t-gold">Item Level ${it.ilvl}</div>`);
+    if (it.bind) L.push(`<div>${esc(it.bind)}</div>`);
+    if (it.uniq) L.push(`<div>Unique</div>`);
+    if (it.slot !== "Non-equippable") L.push(`<div class="lr"><span>${esc(it.slot)}</span><span>${esc(it.sub && it.sub !== it.slot ? it.sub : "")}</span></div>`);
+    if (it.dps != null) {
+      L.push(`<div class="lr"><span>${it.min} - ${it.max} Damage</span><span>Speed ${it.speed.toFixed(2)}</span></div>`);
+      L.push(`<div>(${it.approx ? "≈" : ""}${it.dps.toFixed(2)} damage per second)</div>`);
+    }
+    if (it.armor) L.push(`<div>${it.armor} Armor</div>`);
+    const green = [];
+    for (const [i, v] of it.st) {
+      const k = STATS[i], txt = `${v > 0 ? "+" : ""}${v} ${STAT_NAMES[k]}`;
+      if (WHITE_STATS.has(k)) L.push(`<div>${txt}</div>`); else green.push(txt);
+    }
+    if (it.other) green.push(it.other);
+    if (it.mask > 0 && it.cl) L.push(`<div>Classes: ${esc(it.cl)}</div>`);
+    if (it.req) L.push(`<div>Requires Level ${it.req}</div>`);
+    if (it.rep) L.push(`<div>Requires ${esc(it.rep)}</div>`);
+    for (const g of green) L.push(`<div class="t-green">Equip: +${esc(String(g).replace(/^\+/, ""))}</div>`);
+    if (it.fx) for (const e of it.fx.split(" | ")) L.push(`<div class="t-green">${esc(e)}</div>`);
+    if (it.set) L.push(`<div class="gap"></div><div class="t-set">Part of set: ${esc(it.set)}</div>`);
+    if (it.desc) L.push(`<div class="gap"></div><div class="t-gold">"${esc(it.desc)}"</div>`);
+    if (it.sell) L.push(`<div class="gap"></div><div class="t-muted">Sell Price: ${coins(it.sell)}</div>`);
+    const d = $("detail");
+    d.classList.remove("idle");
+    const how = it.src
+      ? it.src.split(" | ").map((p) => { const i = p.indexOf(": "); return i > 0 ? `<div><b>${esc(p.slice(0, i))}:</b> ${esc(p.slice(i + 2))}</div>` : `<div>${esc(p)}</div>`; }).join("")
+      : `<div>${it.id >= 200000 ? "New WoW Forever item. Its source isn't in the quest and drop database yet." : "Source not known."} Check Wowhead.</div>`;
+    const lvlNote = it.req > 1 ? "" : `<div class="note">No level requirement. Meant for about level ${it.lvl}${it.srcTypes ? " (from its source)" : " (from item level)"}.</div>`;
+    d.innerHTML = `<div class="tip" role="region" aria-label="${esc(it.name)} tooltip">${L.join("")}</div>
+      ${it.est ? `<div class="estNote">Blizzard hasn't published this item's WoW Forever stats yet. Name, level and stats are from Classic; damage and armor use the Forever formulas. The real item may differ.</div>` : ""}<div class="howto"><div class="lbl">How to get it</div>${how}</div>${lvlNote}
+      <div class="links"><a href="https://www.wowhead.com/forever/item=${it.id}" target="_blank" rel="noopener">Open on Wowhead</a>
+      <span>Item ID ${it.id}</span><button type="button" class="btn closeSheet" id="closeSheet">Close</button></div>
+      ${it.approx ? `<div class="note">This weapon has hand-tuned damage. Check Wowhead for exact numbers.</div>` : ""}
+      `;
+    const cs = $("closeSheet");
+    if (cs) cs.addEventListener("click", () => { d.classList.add("idle"); });
+  }
+
+  // Events
+  let t = null;
+  const debounced = () => { clearTimeout(t); t = setTimeout(run, 120); };
+  $("filters").addEventListener("submit", (e) => e.preventDefault());
+  $("filters").addEventListener("input", (e) => { if (e.target.id === "f-slot") updateTypes(); debounced(); });
+  $("filters").addEventListener("change", (e) => { if (e.target.id === "f-slot") updateTypes(); debounced(); });
+  document.querySelectorAll("[data-preset]").forEach((b) => b.addEventListener("click", () => {
+    const p = PRESETS[b.dataset.preset];
+    applyFilters({ mode: p.mode || (b.dataset.preset === "reset" ? mode : "items"), name: "", cls: p.cls, level: p.level, minLevel: 0, slot: p.slot, type: p.type || "", quality: p.quality, stat: "", sort: p.sort });
+    run();
+  }));
+  $("tab-items").addEventListener("click", () => { setMode("items"); run(); });
+  $("tab-quests").addEventListener("click", () => { setMode("quests"); run(); });
+  $("more").addEventListener("click", showMore);
+  $("list").addEventListener("click", (e) => {
+    if (e.target.closest("a")) return;
+    const r = e.target.closest(".row, .reward"); if (r) select(+r.dataset.id);
+  });
+  $("list").addEventListener("keydown", (e) => {
+    const r = e.target.closest(".row"); if (!r) return;
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(+r.dataset.id); }
+    if (e.key === "ArrowDown" && r.nextElementSibling) { e.preventDefault(); r.nextElementSibling.focus(); select(+r.nextElementSibling.dataset.id); }
+    if (e.key === "ArrowUp" && r.previousElementSibling) { e.preventDefault(); r.previousElementSibling.focus(); select(+r.previousElementSibling.dataset.id); }
+  });
+
+  fetch("items.json").then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); }).then((d) => {
+    DATA = d; STATS = d.stats;
+    const F = Object.fromEntries(d.fields.map((f, i) => [f, i]));
+    const names = Object.keys(CLASSES);
+    items = d.items.map((a) => {
+      const it = {};
+      for (const f of d.fields) it[f] = a[F[f]];
+      it.lname = it.name.toLowerCase();
+      it.lsrc = (it.src || "").toLowerCase();
+      it.sv = {}; for (const [i, v] of it.st) it.sv[STATS[i]] = v;
+      it.cl = it.mask > 0 ? names.filter((c) => it.mask & (1 << (CLASSES[c] - 1))).join(", ") : "";
+      if (it.mask > 0 && names.every((c) => it.mask & (1 << (CLASSES[c] - 1)))) it.mask = -1;
+      if (!it.lvl) it.lvl = it.req > 1 ? it.req : Math.max(1, it.ilvl - 5);
+      byId.set(it.id, it);
+      return it;
+    });
+    const QF = Object.fromEntries(d.questFields.map((f, i) => [f, i]));
+    quests = d.quests.map((a) => {
+      const q = {};
+      for (const f of d.questFields) q[f] = a[QF[f]];
+      q.lname = q.name.toLowerCase();
+      return q;
+    });
+    $("build").textContent = d.build;
+    const hiddenTotal = Object.values(d.hidden).reduce((a, b) => a + b, 0);
+    $("meta").textContent = `${items.length.toLocaleString()} items · ${quests.length.toLocaleString()} quests with rewards · ${hiddenTotal.toLocaleString()} items still hidden · build ${d.build}`;
+    initControls();
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem("wfa-filters") || "null"); } catch (e) {}
+    applyFilters(saved || { cls: "Hunter", level: 40, slot: "onehand", sort: "dps", quality: 2 });
+    run();
+  }).catch((err) => {
+    $("list").innerHTML = `<div class="empty">The item data didn't load (${esc(err.message)}). Reload the page to try again.</div>`;
+    $("meta").textContent = "Item data unavailable";
+  });
+})();
+</script>
