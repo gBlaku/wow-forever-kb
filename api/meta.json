@@ -1,0 +1,28 @@
+{
+ "game": "World of Warcraft: Forever",
+ "client_build": "1.60.1.70938",
+ "generated_utc": "2026-11-15T19:31:55Z",
+ "counts": {
+  "items": 22764,
+  "items_from_classic_data": 5016,
+  "items_still_hidden": 7572,
+  "quests": 4244,
+  "item_sources": 62456
+ },
+ "files": {
+  "items": "api/items.json",
+  "quests": "api/quests.json",
+  "item_sources": "api/item_sources.json",
+  "proficiency": "api/proficiency.json",
+  "items_csv": "api/items.csv",
+  "quests_csv": "api/quests.csv",
+  "item_sources_csv": "api/item_sources.csv",
+  "sqlite": "wow_forever.db"
+ },
+ "sources": {
+  "items": "WoW Forever client tables (DB2) via wago.tools",
+  "quests_vendors": "Questie addon WoW Forever database (github.com/Questie/QuestieDB, GPLv3)",
+  "loot_and_classic_items": "vmangos Classic world database (github.com/vmangos/core, GPLv2)"
+ },
+ "docs": "https://github.com/gBlaku/wow-forever-kb#readme"
+}

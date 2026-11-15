@@ -1,0 +1,167 @@
+{
+ "Warrior": {
+  "weapons": [
+   "One-Handed Axe",
+   "Two-Handed Axe",
+   "One-Handed Mace",
+   "Two-Handed Mace",
+   "One-Handed Sword",
+   "Two-Handed Sword",
+   "Polearm",
+   "Staff",
+   "Dagger",
+   "Fist Weapon",
+   "Bow",
+   "Gun",
+   "Crossbow",
+   "Thrown"
+  ],
+  "armor": {
+   "Cloth": 1,
+   "Leather": 1,
+   "Mail": 1,
+   "Plate": 40,
+   "Miscellaneous": 1,
+   "Cosmetic": 1,
+   "Shield": 1
+  }
+ },
+ "Paladin": {
+  "weapons": [
+   "One-Handed Axe",
+   "Two-Handed Axe",
+   "One-Handed Mace",
+   "Two-Handed Mace",
+   "One-Handed Sword",
+   "Two-Handed Sword",
+   "Polearm"
+  ],
+  "armor": {
+   "Cloth": 1,
+   "Leather": 1,
+   "Mail": 1,
+   "Plate": 40,
+   "Miscellaneous": 1,
+   "Cosmetic": 1,
+   "Shield": 1,
+   "Libram": 1
+  }
+ },
+ "Hunter": {
+  "weapons": [
+   "One-Handed Axe",
+   "Two-Handed Axe",
+   "One-Handed Sword",
+   "Two-Handed Sword",
+   "Polearm",
+   "Staff",
+   "Dagger",
+   "Fist Weapon",
+   "Bow",
+   "Gun",
+   "Crossbow",
+   "Thrown"
+  ],
+  "armor": {
+   "Cloth": 1,
+   "Leather": 1,
+   "Mail": 40,
+   "Miscellaneous": 1,
+   "Cosmetic": 1
+  }
+ },
+ "Rogue": {
+  "weapons": [
+   "One-Handed Mace",
+   "One-Handed Sword",
+   "Dagger",
+   "Fist Weapon",
+   "Bow",
+   "Gun",
+   "Crossbow",
+   "Thrown"
+  ],
+  "armor": {
+   "Cloth": 1,
+   "Leather": 1,
+   "Miscellaneous": 1,
+   "Cosmetic": 1
+  }
+ },
+ "Priest": {
+  "weapons": [
+   "One-Handed Mace",
+   "Staff",
+   "Dagger",
+   "Wand"
+  ],
+  "armor": {
+   "Cloth": 1,
+   "Miscellaneous": 1,
+   "Cosmetic": 1
+  }
+ },
+ "Shaman": {
+  "weapons": [
+   "One-Handed Axe",
+   "Two-Handed Axe",
+   "One-Handed Mace",
+   "Two-Handed Mace",
+   "Staff",
+   "Dagger",
+   "Fist Weapon"
+  ],
+  "armor": {
+   "Cloth": 1,
+   "Leather": 1,
+   "Mail": 40,
+   "Miscellaneous": 1,
+   "Cosmetic": 1,
+   "Shield": 1,
+   "Totem": 1
+  }
+ },
+ "Mage": {
+  "weapons": [
+   "One-Handed Sword",
+   "Staff",
+   "Dagger",
+   "Wand"
+  ],
+  "armor": {
+   "Cloth": 1,
+   "Miscellaneous": 1,
+   "Cosmetic": 1
+  }
+ },
+ "Warlock": {
+  "weapons": [
+   "One-Handed Sword",
+   "Staff",
+   "Dagger",
+   "Wand"
+  ],
+  "armor": {
+   "Cloth": 1,
+   "Miscellaneous": 1,
+   "Cosmetic": 1
+  }
+ },
+ "Druid": {
+  "weapons": [
+   "One-Handed Mace",
+   "Two-Handed Mace",
+   "Polearm",
+   "Staff",
+   "Dagger",
+   "Fist Weapon"
+  ],
+  "armor": {
+   "Cloth": 1,
+   "Leather": 1,
+   "Miscellaneous": 1,
+   "Cosmetic": 1,
+   "Idol": 1
+  }
+ }
+}
