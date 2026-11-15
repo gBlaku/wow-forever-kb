@@ -24,6 +24,7 @@ from collections import defaultdict
 HERE = os.path.dirname(os.path.abspath(__file__))
 SITE = os.path.join(HERE, "site")
 BASE = "https://gblaku.github.io/wow-forever-kb/"
+WH = "https://www.wowhead.com/forever/item="
 CLASSES = {"Warrior": 1, "Paladin": 2, "Hunter": 3, "Rogue": 4, "Priest": 5,
            "Shaman": 7, "Mage": 8, "Warlock": 9, "Druid": 11}
 ALWAYS_OK = {"Neck", "Finger", "Trinket", "Back", "Shirt", "Tabard", "Held In Off-hand"}
@@ -198,7 +199,7 @@ def main():
             kind += f", {it['min_damage']}-{it['max_damage']} dmg, {it['speed']:.2f} speed, {it['dps']} dps"
         if it.get("armor"):
             kind += f", {it['armor']} armor"
-        out = f"- **[{it['name']}]({item_url(it['id'])})** ({', '.join(bits)}) {kind}"
+        out = f"- **[{it['name']}]({item_url(it['id'])})** · [Wowhead]({WH}{it['id']}) ({', '.join(bits)}) {kind}"
         st = stat_line(it)
         if st:
             out += f". {st}"
@@ -330,7 +331,7 @@ def main():
                 kind = f"{it['slot']} {it['subclass']}"
                 if it.get("dps"):
                     kind += f", {it['dps']} dps"
-                L.append(f"- [{it['name']}]({item_url(it['id'])}) ({chance:.3g}%) {it['quality_name']}, req "
+                L.append(f"- [{it['name']}]({item_url(it['id'])}) · [Wowhead]({WH}{it['id']}) ({chance:.3g}%) {it['quality_name']}, req "
                          f"{it['required_level'] or '-'}, {kind}{'. ' + st if st else ''}"
                          f"{' (Classic data)' if it.get('estimated') else ''}")
             L.append("")
@@ -399,7 +400,7 @@ def main():
                       if items[i]["item_class"] in ("Weapon", "Armor") and usable(items[i], cls, lv)]
                 if not rw:
                     continue
-                rtxt = "; ".join(f"[{i['name']}]({item_url(i['id'])}) ({i['slot']} {i['subclass']}"
+                rtxt = "; ".join(f"[{i['name']}]({item_url(i['id'])}) ([Wowhead]({WH}{i['id']}), {i['slot']} {i['subclass']}"
                                  f"{', ' + str(i['dps']) + ' dps' if i.get('dps') else ''}"
                                  f"{', ' + stat_line(i) if stat_line(i) else ''})" for i in rw)
                 qlines.append(f"- [{q['quest_level']}] **{q['name']}** ({q['zone'] or '?'}, {q['faction']}, "
@@ -439,7 +440,9 @@ def main():
          "(quest rewards show Alliance/Horde/Both) and what they can realistically get. Prefer items "
          "with a known source. Hunters care most about their ranged weapon; melee weapons are mainly "
          "stat sticks for them.",
-         "5. Say which items are marked \"Classic data\": Blizzard hides those in WoW Forever so far, so "
+         "5. For every item you recommend, include its Wowhead link (each item line has one, "
+         "e.g. https://www.wowhead.com/forever/item=7717) so the player can check the latest info.",
+         "6. Say which items are marked \"Classic data\": Blizzard hides those in WoW Forever so far, so "
          "their stats come from Classic and may change. Quests, drops and vendors are Classic data "
          "too, so content new in Forever is missing. Every item has a Wowhead link for the latest info.",
          "",
