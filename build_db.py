@@ -269,7 +269,8 @@ def main():
         speed REAL, min_damage INTEGER, max_damage INTEGER, dps REAL, dps_approx INTEGER,
         armor INTEGER, {stat_cols}, other_stats TEXT,
         effects TEXT, item_set TEXT, required_reputation TEXT,
-        sell_price_copper INTEGER, description TEXT, wowhead TEXT, estimated INTEGER);
+        sell_price_copper INTEGER, buy_price_copper INTEGER, rep_rank TEXT,
+        description TEXT, wowhead TEXT, estimated INTEGER);
     CREATE TABLE proficiency (class TEXT, subclass TEXT);
     CREATE TABLE armor_proficiency (class TEXT, armor TEXT, from_level INTEGER);
     CREATE TABLE meta (key TEXT, value TEXT);
@@ -325,6 +326,7 @@ def main():
                   "Description_lang": cl["description"] or "",
                   "MinFactionID": str(cl["required_reputation_faction"] or 0),
                   "MinReputation": cl["required_reputation_rank"], "ItemDelay": cl["delay"],
+                  "BuyPrice": cl["buy_price"],
                   "DmgVariance": 0.4 if (inv == 17 or scid in (1, 5, 6, 8, 10, 17, 18, 20)) else 0.6,
                   "Flags_1": 0, "QualityModifier": 0}
             for k in range(10):
@@ -342,7 +344,8 @@ def main():
                  required_level=int(sp["RequiredLevel"]), classes=classes, class_mask=mask,
                  bonding=BONDING.get(int(sp["Bonding"]), ""),
                  is_unique=1 if sp["MaxCount"] == "1" else 0,
-                 sell_price_copper=int(sp["SellPrice"]), description=sp["Description_lang"],
+                 sell_price_copper=int(sp["SellPrice"]), buy_price_copper=int(sp["BuyPrice"] or 0),
+                 description=sp["Description_lang"],
                  item_set=set_of_item.get(iid), estimated=1 if cl else 0)
         if cl:
             for k in range(1, 11):
@@ -357,6 +360,9 @@ def main():
             fname = fac["Name_lang"] if fac else f"faction {sp['MinFactionID']}"
             rank = REP_RANKS.get(int(sp["MinReputation"] or 0), sp["MinReputation"])
             r["required_reputation"] = f"{fname} - {rank}"
+        elif int(sp["MinReputation"] or 0) > 0:
+            # PvP/reputation vendor items store only the rank; the faction is the vendor's own
+            r["rep_rank"] = REP_RANKS.get(int(sp["MinReputation"]), sp["MinReputation"])
 
         # Stats: allocation * RandPropPoints budget / 10000
         col = rpp_column(inv)

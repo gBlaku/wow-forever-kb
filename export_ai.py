@@ -15,6 +15,10 @@ Run after build_db.py (and after export_api.py, which recreates site/).
 import os
 import re
 import sqlite3
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from questie_sources import money  # noqa: E402
 from collections import defaultdict
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -132,6 +136,14 @@ def main():
     for r in con.execute("SELECT source_id, item_id FROM item_sources WHERE kind = 'quest'"):
         if r["item_id"] in items:
             quest_rewards[r["source_id"]].append(r["item_id"])
+
+    def giver_text(q):
+        if not q.get("start_npc"):
+            return ""
+        out = f"; quest giver {q['start_npc']}{' in ' + q['start_where'] if q.get('start_where') else ''}"
+        if q.get("end_npc") and q["end_npc"] != q["start_npc"]:
+            out += f", turn in to {q['end_npc']}{' in ' + q['end_where'] if q.get('end_where') else ''}"
+        return out
 
     def item_url(i):
         return f"{BASE}ai/item/{i}.md"
@@ -251,8 +263,8 @@ def main():
                 q = quests.get(s["source_id"], {})
                 L.append(f"- Quest reward: **{s['name']}** (quest level {s['max_level']}, pick up at "
                          f"{s['min_level']}, {s['zone'] or '?'}, {q.get('faction', '?')}"
-                         f"{', ' + q['classes'] + ' only' if q.get('classes') else ''}) "
-                         f"https://www.wowhead.com/forever/quest={s['source_id']}")
+                         f"{', ' + q['classes'] + ' only' if q.get('classes') else ''})"
+                         f"{giver_text(q)} https://www.wowhead.com/forever/quest={s['source_id']}")
             elif s["kind"] == "drop" and s["source_id"]:
                 lv = f"level {s['min_level']}" + (f"-{s['max_level']}" if s['max_level'] and s['max_level'] != s['min_level'] else "")
                 L.append(f"- Drop: **{s['name']}** ({lv}{' ' + s['extra'] if s['extra'] else ''}, "
@@ -263,7 +275,8 @@ def main():
                          f"up to {s['chance']:.2g}% per kill")
             elif s["kind"] == "vendor":
                 L.append(f"- Vendor: **{s['name']}**{' (' + s['extra'] + ')' if s['extra'] else ''}, "
-                         f"{s['zone'] or '?'} https://www.wowhead.com/forever/npc={s['source_id']}")
+                         f"{s['zone'] or '?'}{', costs ' + money(it['buy_price_copper']) if it.get('buy_price_copper') else ''}"
+                         f" https://www.wowhead.com/forever/npc={s['source_id']}")
             elif s["kind"] == "object":
                 chance = f", {s['chance']:.3g}%" if s["chance"] else ""
                 L.append(f"- Chest/object: **{s['name']}**{', ' + s['zone'] if s['zone'] else ''}{chance}")
@@ -390,7 +403,7 @@ def main():
                                  f"{', ' + str(i['dps']) + ' dps' if i.get('dps') else ''}"
                                  f"{', ' + stat_line(i) if stat_line(i) else ''})" for i in rw)
                 qlines.append(f"- [{q['quest_level']}] **{q['name']}** ({q['zone'] or '?'}, {q['faction']}, "
-                              f"pick up at {q['required_level']}): {rtxt} "
+                              f"pick up at {q['required_level']}{giver_text(q)}): {rtxt} "
                               f"https://www.wowhead.com/forever/quest={q['id']}")
             if qlines:
                 L.append(f"## Quests at quest level {qlo}-{qhi} with gear a {cls.lower()} can use")

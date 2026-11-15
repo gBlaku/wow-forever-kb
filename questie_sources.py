@@ -125,6 +125,8 @@ def add_sources(con):
         with open(os.path.join(DATA, name + ".csv"), encoding="utf-8", newline="") as f:
             return list(csv.DictReader(f))
     areas = {int(r["ID"]): r["AreaName_lang"] for r in read_csv("AreaTable")}
+    faction_names = {r["ID"]: r["Name_lang"] for r in read_csv("Faction")}
+    template_faction = {int(r["ID"]): faction_names.get(r["Faction"]) for r in read_csv("FactionTemplate")}
     sorts = {int(r["ID"]): r["SortName_lang"] for r in read_csv("QuestSort")}
 
     def zone_name(z):
@@ -148,9 +150,10 @@ def add_sources(con):
     con.executescript("""
     DROP TABLE IF EXISTS quests; DROP TABLE IF EXISTS item_sources; DROP TABLE IF EXISTS npcs;
     CREATE TABLE quests (id INTEGER PRIMARY KEY, name TEXT, quest_level INTEGER, required_level INTEGER,
-        faction TEXT, classes TEXT, zone TEXT, repeatable INTEGER, start_npc TEXT, end_npc TEXT, wowhead TEXT);
+        faction TEXT, classes TEXT, zone TEXT, repeatable INTEGER, start_npc TEXT, end_npc TEXT, wowhead TEXT,
+        start_where TEXT, end_where TEXT);
     CREATE TABLE npcs (id INTEGER PRIMARY KEY, name TEXT, title TEXT, min_level INTEGER, max_level INTEGER,
-        elite INTEGER, zone TEXT, friendly_to TEXT);
+        elite INTEGER, zone TEXT, friendly_to TEXT, faction TEXT);
     CREATE TABLE item_sources (item_id INTEGER, kind TEXT, source_id INTEGER, name TEXT,
         min_level INTEGER, max_level INTEGER, zone TEXT, extra TEXT, chance REAL);
     """)
@@ -160,28 +163,34 @@ def add_sources(con):
         if not isinstance(n, dict) or not n.get(1):
             continue
         npc_rows[nid] = (nid, n.get(1), n.get(14), n.get(4), n.get(5), 1 if (n.get(6) or 0) in (1, 2, 3) else 0,
-                         zone_name(n.get(9)), n.get(13))
-    con.executemany("INSERT INTO npcs VALUES (?,?,?,?,?,?,?,?)", npc_rows.values())
+                         zone_name(n.get(9)), n.get(13), template_faction.get(n.get(12)))
+    con.executemany("INSERT INTO npcs VALUES (?,?,?,?,?,?,?,?,?)", npc_rows.values())
 
     def first_npc(t):
-        for k in (1,):
-            lst = ids((t or {}).get(k)) if isinstance(t, dict) else []
-            if lst and lst[0] in npc_rows:
-                return npc_rows[lst[0]][1]
+        """(name, zone) of the first creature or object that starts/ends a quest."""
         if isinstance(t, dict):
+            lst = ids(t.get(1))
+            if lst and lst[0] in npc_rows:
+                return npc_rows[lst[0]][1], npc_rows[lst[0]][6]
             lst = ids(t.get(2))
             if lst and isinstance(objects.get(lst[0]), dict):
-                return objects[lst[0]].get(1)
-        return None
+                o = objects[lst[0]]
+                return o.get(1), zone_name(o.get(5))
+            lst = ids(t.get(3))
+            if lst and isinstance(qitems.get(lst[0]), dict):
+                return f"the item {qitems[lst[0]].get(1)}", None
+        return None, None
 
     qrows = {}
     for qid, q in quests.items():
         if not isinstance(q, dict) or not q.get(1):
             continue
+        start, start_where = first_npc(q.get(2))
+        end, end_where = first_npc(q.get(3))
         qrows[qid] = (qid, q.get(1), q.get(5), q.get(4), faction(q.get(6)), class_list(q.get(7)),
                       zone_name(q.get(17)), 1 if (q.get(24) or 0) & 1 else 0,
-                      first_npc(q.get(2)), first_npc(q.get(3)), f"https://www.wowhead.com/forever/quest={qid}")
-    con.executemany("INSERT INTO quests VALUES (?,?,?,?,?,?,?,?,?,?,?)", qrows.values())
+                      start, end, f"https://www.wowhead.com/forever/quest={qid}", start_where, end_where)
+    con.executemany("INSERT INTO quests VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", qrows.values())
 
     src = []
     for iid, it in qitems.items():
@@ -238,6 +247,11 @@ def summarize(con):
     for c, t in (("source_types", "TEXT"), ("source_summary", "TEXT"), ("level_hint", "INTEGER")):
         if c not in cols:
             con.execute(f"ALTER TABLE items ADD COLUMN {c} {t}")
+    quest_giver = {qid: (who, where) for qid, who, where in
+                   con.execute("SELECT id, start_npc, start_where FROM quests")}
+    npc_faction = dict(con.execute("SELECT id, faction FROM npcs"))
+    item_info = {r[0]: r[1:] for r in con.execute(
+        "SELECT id, buy_price_copper, rep_rank, required_reputation FROM items WHERE hidden = 0")}
     by_item = {}
     for row in con.execute("SELECT item_id, kind, source_id, name, min_level, max_level, zone, extra, chance "
                            "FROM item_sources"):
@@ -248,15 +262,18 @@ def summarize(con):
             return ""
         return f"lvl {a}" + (f"-{b}" if b and b != a else "")
 
-    updates = []
+    updates, rep_updates = [], []
     for (iid, req, ilvl) in con.execute("SELECT id, required_level, item_level FROM items WHERE hidden = 0").fetchall():
         rows = by_item.get(iid, [])
         kinds = sorted({r[1] for r in rows})
         parts = []
         qs = sorted([r for r in rows if r[1] == "quest"], key=lambda r: r[5] or 0)
         if qs:
+            def giver(qid):
+                who, where = quest_giver.get(qid, (None, None))
+                return f"; from {who}{' in ' + where if where else ''}" if who else ""
             parts.append("Quest: " + "; ".join(
-                f"{r[3]} (lvl {r[5]}{', ' + r[6] if r[6] else ''}, {r[7]})" for r in qs[:3])
+                f"{r[3]} (lvl {r[5]}{', ' + r[6] if r[6] else ''}, {r[7]}{giver(r[2])})" for r in qs[:3])
                 + (f" +{len(qs)-3} more" if len(qs) > 3 else ""))
         ds = sorted([r for r in rows if r[1] == "drop" and r[2]], key=lambda r: -(r[8] or 0))
         world = [r for r in rows if r[1] == "drop" and not r[2]]
@@ -267,9 +284,16 @@ def summarize(con):
         for r in world:
             parts.append(f"World drop: {r[7]}, {lvl(r[4], r[5])}" + (f", up to {r[8]:.2g}% each" if r[8] else ""))
         vs = [r for r in rows if r[1] == "vendor"]
+        price, rep_rank, rep = item_info.get(iid, (None, None, None))
         if vs:
             parts.append("Vendor: " + "; ".join(f"{r[3]}{', ' + r[6] if r[6] else ''}" for r in vs[:3])
-                         + (f" +{len(vs)-3} more" if len(vs) > 3 else ""))
+                         + (f" +{len(vs)-3} more" if len(vs) > 3 else "")
+                         + (f" (costs {money(price)})" if price else ""))
+            if rep_rank and not rep:
+                # the item stores only the rank; the faction is the vendor's own
+                fac = next((npc_faction.get(r[2]) for r in vs if npc_faction.get(r[2])), None)
+                if fac:
+                    rep_updates.append((f"{fac} - {rep_rank}", iid))
         os_ = sorted([r for r in rows if r[1] == "object"], key=lambda r: -(r[8] or 0))
         if os_:
             parts.append("Chest/object: " + "; ".join(
@@ -296,6 +320,13 @@ def summarize(con):
             hint = max(1, (ilvl or 0) - 5)
         updates.append((",".join(kinds) or None, " | ".join(parts) or None, hint, iid))
     con.executemany("UPDATE items SET source_types=?, source_summary=?, level_hint=? WHERE id=?", updates)
+    con.executemany("UPDATE items SET required_reputation=? WHERE id=?", rep_updates)
+    print(f"Summaries: {len(updates)} items, {len(rep_updates)} vendor reputation requirements filled in")
+
+
+def money(copper):
+    g, s, c = copper // 10000, copper // 100 % 100, copper % 100
+    return " ".join(x for x in (f"{g}g" if g else "", f"{s}s" if s else "", f"{c}c" if c or not (g or s) else "") if x)
 
 
 if __name__ == "__main__":

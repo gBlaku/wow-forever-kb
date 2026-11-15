@@ -18,7 +18,7 @@ TABLES = ["ItemSparse", "Item", "ItemClass", "ItemSubClass", "ChrClasses", "ChrR
           "ItemArmorTotal", "ArmorLocation", "ItemArmorShield", "ItemEffect",
           "ItemXItemEffect", "SpellEffect", "Spell", "SpellName", "SpellMisc",
           "SpellDuration", "ItemSet", "ItemSetSpell", "ItemSearchName", "Faction",
-          "AreaTable", "QuestSort", "SkillLineAbility", "SkillLine", "SpellAuraOptions", "SpellRadius"]
+          "AreaTable", "QuestSort", "SkillLineAbility", "SkillLine", "SpellAuraOptions", "SpellRadius", "FactionTemplate"]
 # Quest, NPC, drop and vendor data from the Questie addon's WoW Forever database (GPLv3)
 QUESTIE = "https://raw.githubusercontent.com/Questie/QuestieDB/master/data/Forever/"
 QUESTIE_FILES = ["foreverQuestDB.lua", "foreverItemDB.lua", "foreverNpcDB.lua", "foreverObjectDB.lua"]
