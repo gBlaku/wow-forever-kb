@@ -52,8 +52,8 @@ STAT_LABEL = [("agility", "Agi"), ("strength", "Str"), ("stamina", "Sta"), ("int
               ("parry", "Parry"), ("block", "Block"), ("block_value", "Block value"),
               ("bonus_armor", "Armor"), ("fire_res", "Fire res"), ("frost_res", "Frost res"),
               ("nature_res", "Nature res"), ("shadow_res", "Shadow res"), ("arcane_res", "Arcane res")]
-SLOT_ORDER = ["Head", "Neck", "Shoulder", "Back", "Chest", "Wrist", "Hands", "Waist", "Legs", "Feet",
-              "Finger", "Trinket", "Main hand", "Off hand", "Two-hand", "Ranged"]
+SLOT_ORDER = ["Main hand", "Off hand", "Two-hand", "Ranged", "Head", "Neck", "Shoulder", "Back", "Chest",
+              "Wrist", "Hands", "Waist", "Legs", "Feet", "Finger", "Trinket"]
 
 
 def slug(s):
@@ -187,7 +187,7 @@ def main():
     def short_source(it):
         src = it.get("source_summary")
         if src:
-            return src if len(src) <= 220 else src[:217] + "..."
+            return src if len(src) <= 170 else src[:167] + "..."
         if it["id"] >= 200000:
             return "New WoW Forever item; source not in the data yet (check Wowhead)"
         return "Source unknown (check Wowhead)"
@@ -205,7 +205,7 @@ def main():
             out += f". {st}"
         if it.get("effects"):
             fx = it["effects"]
-            out += f". {fx if len(fx) <= 200 else fx[:197] + '...'}"
+            out += f". {fx if len(fx) <= 150 else fx[:147] + '...'}"
         if it.get("required_reputation"):
             out += f". Requires {it['required_reputation']}"
         out += f"\n  - Get: {short_source(it)}"
@@ -294,13 +294,29 @@ def main():
         by_letter[key].append(it)
 
     letters = sorted(by_letter)
+    MAX_NAMES = 250  # keeps each page small enough for AI readers
+
+    def name_page(prefix, lst):
+        """Write names/<prefix>.md: the names themselves, or links to longer-prefix pages."""
+        lst = sorted(lst, key=lambda i: i["name"].lower())
+        label = prefix.upper() if prefix != "0" else "a digit or symbol"
+        if len(lst) <= MAX_NAMES or len(prefix) >= 12:
+            L = [f"# Item names starting with {label}", "", "Name · slot/type · required level", ""]
+            L += [f"- [{i['name']}]({item_url(i['id'])}) · {i['slot']} {i['subclass']} · req {i['required_level'] or '-'}"
+                  for i in lst]
+        else:
+            groups = defaultdict(list)
+            for i in lst:
+                nxt = i["name"][len(prefix):len(prefix) + 1].lower()
+                groups[prefix + (nxt if nxt.isalnum() and nxt.isascii() else "_")].append(i)
+            L = [f"# Item names starting with {label}", "", "Pick the next letters:", ""]
+            for sub in sorted(groups):
+                name_page(sub, groups[sub])
+                L.append(f"- [{sub.upper()} ({len(groups[sub])} items)]({BASE}ai/names/{sub}.md)")
+        write(f"ai/names/{prefix}.md", "\n".join(L) + footer)
+
     for key in letters:
-        lst = sorted(by_letter[key], key=lambda i: i["name"].lower())
-        L = [f"# Item names starting with {key.upper() if key != '0' else 'a digit or symbol'}", "",
-             "Name · slot/type · required level · link", ""]
-        L += [f"- [{i['name']}]({item_url(i['id'])}) · {i['slot']} {i['subclass']} · req {i['required_level'] or '-'}"
-              for i in lst]
-        write(f"ai/names/{key}.md", "\n".join(L) + footer)
+        name_page(key, by_letter[key])
 
     # ------------------------------------------------------------ zones
     zone_creatures = defaultdict(lambda: defaultdict(list))
@@ -309,7 +325,10 @@ def main():
         it = items.get(iid)
         if not it or it["quality"] < 2 or it["slot"] == "Non-equippable":
             continue
+        world_drop = any(s["kind"] == "drop" and not s["source_id"] for s in lst)
         for s in lst:
+            if world_drop and (s["chance"] or 0) < 10:
+                continue  # shared world-drop loot, not this creature's own table
             if s["kind"] == "drop" and s["source_id"] and s["zone"] and (s["chance"] or 0) >= 1:
                 zone_creatures[s["zone"]][(s["name"], s["source_id"], s["min_level"], s["max_level"], s["extra"])].append((s["chance"], it))
                 if s["min_level"]:
@@ -319,14 +338,14 @@ def main():
         lv = zone_levels[zone]
         zone_rows.append((min(lv) if lv else 0, max(lv) if lv else 0, zone))
         L = [f"# {zone}: bosses, rares and their loot", "",
-             "Uncommon or better gear that drops at 1% or more, by creature. Chances are per kill "
-             "(Classic loot tables).", ""]
+             "Each creature's own uncommon-or-better gear that drops at 1% or more (top 10 per creature; "
+             "shared world drops left out). Chances are per kill (Classic loot tables).", ""]
         for (name, nid, lo, hi, extra), loot in sorted(creatures.items(), key=lambda kv: kv[0][2] or 0):
             lvl = f"level {lo}" + (f"-{hi}" if hi and hi != lo else "")
             L.append(f"## {name} ({lvl}{' ' + extra if extra else ''})")
             L.append(f"https://www.wowhead.com/forever/npc={nid}")
             L.append("")
-            for chance, it in sorted(loot, key=lambda x: -x[0]):
+            for chance, it in sorted(loot, key=lambda x: -x[0])[:10]:
                 st = stat_line(it)
                 kind = f"{it['slot']} {it['subclass']}"
                 if it.get("dps"):
@@ -375,11 +394,16 @@ def main():
                 if it["item_class"] == "Armor" and it["slot"] not in ALWAYS_OK and not usable(it, cls, lv):
                     continue
                 per_slot[g].append((score(it, cls, g), it))
+            qlo, qhi = max(1, lv - 3), lv + 2
+            quest_url = f"{BASE}ai/{cslug}/{lv}-quests.md"
+            # Kept short (AI readers cut long pages off): weapons first, a few items per slot,
+            # quest rewards on their own page.
             L = [f"# {cls}, level {lv}: best gear by slot (WoW Forever)", "",
-                 f"Items a level {lv} {cls.lower()} can equip, best first by a rough stat score for a typical "
-                 f"{cls.lower()} build (see the class page for the weights). Includes items up to 2 levels above "
-                 "via no-requirement quest rewards and drops. Each item shows how to get it; open the item link "
-                 "for every source and drop chance. Prefer items with a known source.", ""]
+                 f"Best items a level {lv} {cls.lower()} can equip, by a rough stat score for a typical "
+                 f"{cls.lower()} build (weights on the class page). Weapons first, then armor. Each item has "
+                 "its Wowhead link and how to get it; the item page has every source and drop chance. "
+                 "Prefer items with a known source.", "",
+                 f"Quest rewards for this level (quest level {qlo}-{qhi}): {quest_url}", ""]
             for g in SLOT_ORDER:
                 # epics/legendaries with no known source (e.g. odd level-scaled copies) go last
                 lst = sorted(per_slot.get(g, []), key=lambda x: (
@@ -387,31 +411,11 @@ def main():
                     -x[0], -x[1]["item_level"]))
                 if not lst:
                     continue
-                n = 8 if g in ("Finger", "Trinket", "Main hand") else 6
+                n = 5 if g in ("Main hand", "Off hand", "Two-hand", "Ranged", "Finger", "Trinket") else 4
                 L.append(f"## {g}")
                 L += [item_line(it) for _, it in lst[:n]]
                 L.append("")
-            qlo, qhi = max(1, lv - 3), lv + 2
-            qs = [q for q in quests.values() if q["quest_level"] and qlo <= q["quest_level"] <= qhi
-                  and (q["required_level"] or 0) <= lv and (not q["classes"] or cls in q["classes"])]
-            qlines = []
-            for q in sorted(qs, key=lambda q: (q["quest_level"], q["zone"] or "", q["name"])):
-                rw = [items[i] for i in quest_rewards.get(q["id"], [])
-                      if items[i]["item_class"] in ("Weapon", "Armor") and usable(items[i], cls, lv)]
-                if not rw:
-                    continue
-                rtxt = "; ".join(f"[{i['name']}]({item_url(i['id'])}) ([Wowhead]({WH}{i['id']}), {i['slot']} {i['subclass']}"
-                                 f"{', ' + str(i['dps']) + ' dps' if i.get('dps') else ''}"
-                                 f"{', ' + stat_line(i) if stat_line(i) else ''})" for i in rw)
-                qlines.append(f"- [{q['quest_level']}] **{q['name']}** ({q['zone'] or '?'}, {q['faction']}, "
-                              f"pick up at {q['required_level']}{giver_text(q)}): {rtxt} "
-                              f"https://www.wowhead.com/forever/quest={q['id']}")
-            if qlines:
-                L.append(f"## Quests at quest level {qlo}-{qhi} with gear a {cls.lower()} can use")
-                L.append("Faction shows who can take the quest. Classic quest data; new Forever quests are missing.")
-                L += qlines
-                L.append("")
-            nav = [f"[{cls} page]({BASE}ai/{cslug}.md)"]
+            nav = [f"[{cls} page]({BASE}ai/{cslug}.md)", f"[quest rewards]({quest_url})"]
             if lv > 1:
                 nav.append(f"[level {lv - 1}]({BASE}ai/{cslug}/{lv - 1}.md)")
             if lv < 60:
@@ -419,6 +423,34 @@ def main():
             nav.append(f"[dungeons and loot]({BASE}ai/zones.md)")
             L.append("More: " + " · ".join(nav))
             write(f"ai/{cslug}/{lv}.md", "\n".join(L) + footer)
+
+            qs = [q for q in quests.values() if q["quest_level"] and qlo <= q["quest_level"] <= qhi
+                  and (q["required_level"] or 0) <= lv and (not q["classes"] or cls in q["classes"])]
+            Q = [f"# {cls}, level {lv}: quests with gear rewards (quest level {qlo}-{qhi})", "",
+                 f"Quests a level {lv} {cls.lower()} can take that reward uncommon-or-better gear they can use, "
+                 "highest quest level first. Faction shows who "
+                 "can take the quest. Classic quest data; quests new in WoW Forever are missing.", "",
+                 f"Best gear by slot for this level: {BASE}ai/{cslug}/{lv}.md", ""]
+            shown_q = 0
+            for q in sorted(qs, key=lambda q: (-q["quest_level"], q["zone"] or "", q["name"])):
+                rw = [items[i] for i in quest_rewards.get(q["id"], [])
+                      if items[i]["item_class"] in ("Weapon", "Armor") and items[i]["quality"] >= 2
+                      and usable(items[i], cls, lv)]
+                if not rw:
+                    continue
+                shown_q += 1
+                if shown_q > 50:
+                    Q.append("- (More quests exist at these levels; ask about a zone or open the item pages.)")
+                    break
+                rtxt = "; ".join(f"{i['name']} ([Wowhead]({WH}{i['id']}), {i['slot']} {i['subclass']}"
+                                 f"{', ' + str(i['dps']) + ' dps' if i.get('dps') else ''}"
+                                 f"{', ' + stat_line(i) if stat_line(i) else ''})" for i in rw)
+                Q.append(f"- [{q['quest_level']}] **{q['name']}** ({q['zone'] or '?'}, {q['faction']}, "
+                         f"pick up at {q['required_level']}{giver_text(q)}): {rtxt}. "
+                         f"Quest: https://www.wowhead.com/forever/quest={q['id']}")
+            if len(Q) == 6:
+                Q.append("No quests with gear rewards for this class at this level in the data.")
+            write(f"ai/{cslug}/{lv}-quests.md", "\n".join(Q) + footer)
 
     # ------------------------------------------------------------ llms.txt
     L = ["# WoW Forever Armory",
@@ -432,7 +464,8 @@ def main():
          "",
          "1. Gear for a class and level: open that class's page below, then the level page it links to "
          "(for example a level 40 hunter: " + f"{BASE}ai/hunter/40.md" + "). It lists the best items per "
-         "slot with stats and how to get each one, plus quests with rewards.",
+         "slot with stats, Wowhead links and how to get each one. Quests with gear rewards for that level "
+         "are on a linked page (for example " + f"{BASE}ai/hunter/40-quests.md" + ").",
          "2. One item: open its item page (linked from every list, or find it in the name index below) "
          "for full stats, every source and drop chances.",
          "3. A dungeon, raid or zone: open the zone list and then that zone's page for bosses and loot.",
