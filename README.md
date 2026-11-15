@@ -1,5 +1,9 @@
 # WoW Forever Armory & item data
 
+> **AI assistants (Claude, ChatGPT…):** to answer gear, quest or loot questions, read
+> https://gblaku.github.io/wow-forever-kb/llms.txt first. It explains how to answer and links
+> to every class, level, item and dungeon page.
+
 A free, searchable database of **World of Warcraft: Forever** items, quest rewards and boss loot.
 It's built from the game client's own data, plus open-source quest and loot databases, and rebuilt
 automatically every day.
