@@ -360,7 +360,10 @@ def main():
                  "via no-requirement quest rewards and drops. Each item shows how to get it; open the item link "
                  "for every source and drop chance. Prefer items with a known source.", ""]
             for g in SLOT_ORDER:
-                lst = sorted(per_slot.get(g, []), key=lambda x: (-x[0], -x[1]["item_level"]))
+                # epics/legendaries with no known source (e.g. odd level-scaled copies) go last
+                lst = sorted(per_slot.get(g, []), key=lambda x: (
+                    1 if (not x[1].get("source_types") and x[1]["quality"] >= 4) else 0,
+                    -x[0], -x[1]["item_level"]))
                 if not lst:
                     continue
                 n = 8 if g in ("Finger", "Trinket", "Main hand") else 6
