@@ -74,11 +74,16 @@ def effect_values(it):
         v["heal"] += int(m.group(1))
     for m in re.finditer(r"(\d+) mana (?:every|per) 5 sec", fx):
         v["mp5"] += int(m.group(1))
-    for m in re.finditer(r"critical strike[^.]*?by (\d+)%", fx):
-        v["crit"] += int(m.group(1))
-    for m in re.finditer(r"chance to hit[^.]*?by (\d+)%", fx):
-        v["hit"] += int(m.group(1))
+    # only general bonuses ("Improves your chance to get a critical strike [with spells] by 1%"),
+    # not ones tied to a single spell ("critical strike chance of your Healing Wave")
+    for m in re.finditer(r"Improves your chance to get a critical strike([^.|]*?) by (\d+)%", fx):
+        v["spell_crit" if "spell" in m.group(1) else "crit"] += int(m.group(2))
+    for m in re.finditer(r"Improves your chance to hit([^.|]*?) by (\d+)%", fx):
+        v["spell_hit" if "spell" in m.group(1) else "hit"] += int(m.group(2))
     return v
+
+
+CASTERS = {"Priest", "Mage", "Warlock"}
 
 
 def score(it, cls, slot_group):
@@ -94,8 +99,10 @@ def score(it, cls, slot_group):
          + w.get("mp5", 0) * ((it.get("mp5") or 0) + fx["mp5"])
          + w.get("defense", 0) * (it.get("defense") or 0)
          # Forever crit/hit are small rating numbers; Classic ones are % from effects
-         + w.get("crit", 0) * ((it.get("crit") or 0) / 10 + fx["crit"])
-         + w.get("hit", 0) * ((it.get("hit") or 0) / 10 + fx["hit"]))
+         + w.get("crit", 0) * ((it.get("crit") or 0) / 10
+                               + (fx["spell_crit"] if cls in CASTERS else fx["crit"]))
+         + w.get("hit", 0) * ((it.get("hit") or 0) / 10
+                              + (fx["spell_hit"] if cls in CASTERS else fx["hit"])))
     if it.get("dps"):
         if slot_group == "Ranged":
             s += w.get("ranged", 0) * it["dps"]
