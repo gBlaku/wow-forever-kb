@@ -3,6 +3,13 @@
 > **AI assistants (Claude, ChatGPT…):** to answer gear, quest or loot questions, read
 > https://gblaku.github.io/wow-forever-kb/llms.txt first. It explains how to answer and links
 > to every class, level, item and dungeon page.
+>
+> **Coding agents (Claude Code, Codex…):** you can also query the data directly. No build is needed:
+> ```bash
+> git clone https://github.com/gBlaku/wow-forever-kb && cd wow-forever-kb
+> curl -LO https://gblaku.github.io/wow-forever-kb/wow_forever.db
+> python query.py --class hunter --level 40 --slot ranged      # see --help; or use --sql
+> ```
 
 A free, searchable database of **World of Warcraft: Forever** items, quest rewards and boss loot.
 It's built from the game client's own data, plus open-source quest and loot databases, and rebuilt
