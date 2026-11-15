@@ -78,7 +78,7 @@ def print_items(rows, verbose):
         if r["source_summary"]:
             for part in r["source_summary"].split(" | "):
                 print(f"    > {part}")
-        elif r["id"] >= 200000:
+        elif r["id"] >= 240000:
             print("    > Source: new WoW Forever item, not in the quest/drop database yet (see Wowhead)")
         if verbose and extra:
             print(f"    {' | '.join(extra)}")

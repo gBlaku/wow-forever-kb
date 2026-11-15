@@ -25,6 +25,15 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SITE = os.path.join(HERE, "site")
 BASE = "https://gblaku.github.io/wow-forever-kb/"
 WH = "https://www.wowhead.com/forever/item="
+FOREVER_IDS = 240000  # item IDs from here on were added for WoW Forever; 200000+ are Season of Discovery era
+
+
+def era(item_id):
+    if item_id >= FOREVER_IDS:
+        return ", new in WoW Forever"
+    if item_id >= 200000:
+        return ", Season of Discovery era, may not be in WoW Forever"
+    return ""
 CLASSES = {"Warrior": 1, "Paladin": 2, "Hunter": 3, "Rogue": 4, "Priest": 5,
            "Shaman": 7, "Mage": 8, "Warlock": 9, "Druid": 11}
 ALWAYS_OK = {"Neck", "Finger", "Trinket", "Back", "Shirt", "Tabard", "Held In Off-hand"}
@@ -146,6 +155,11 @@ def main():
             out += f", turn in to {q['end_npc']}{' in ' + q['end_where'] if q.get('end_where') else ''}"
         return out
 
+    def quest_label(qid):
+        q = quests.get(qid)
+        name = f"quest \"{q['name']}\" ({q['zone'] or '?'}, level {q['quest_level']}, {q['faction']})" if q else f"quest {qid}"
+        return f"{name} https://www.wowhead.com/forever/quest={qid}"
+
     def item_url(i):
         return f"{BASE}ai/item/{i}.md"
 
@@ -188,8 +202,10 @@ def main():
         src = it.get("source_summary")
         if src:
             return src if len(src) <= 170 else src[:167] + "..."
-        if it["id"] >= 200000:
+        if it["id"] >= FOREVER_IDS:
             return "New WoW Forever item; source not in the data yet (check Wowhead)"
+        if it["id"] >= 200000:
+            return "Added after Classic (Season of Discovery era); may not be in WoW Forever (check Wowhead)"
         return "Source unknown (check Wowhead)"
 
     def item_line(it, extra=""):
@@ -255,6 +271,8 @@ def main():
         if it.get("estimated"):
             L.append("- Note: hidden in the WoW Forever client so far. Name, level and stats are from "
                      "Classic; damage and armor use the Forever formulas. The real item may differ.")
+        if it.get("starts_quest"):
+            L.append(f"- **This item begins a quest**: {quest_label(it['starts_quest'])}")
         L += ["", "## How to get it"]
         srcs = sources.get(it["id"], [])
         if not srcs:
@@ -450,7 +468,61 @@ def main():
                          f"Quest: https://www.wowhead.com/forever/quest={q['id']}")
             if len(Q) == 6:
                 Q.append("No quests with gear rewards for this class at this level in the data.")
+            near = sorted([it for it in items.values() if it.get("starts_quest")
+                           and not it["name"].startswith("Craftsman's Writ")
+                           and max(1, lv - 4) <= (it["required_level"] or 0) <= lv],
+                          key=lambda i: (-(i["required_level"] or 0), -i["id"]))
+            if near:
+                Q += ["", f"## Items that begin a quest (required level {max(1, lv - 4)}-{lv})",
+                      "Hidden quests started by an item that drops or is found. New WoW Forever ones have no "
+                      f"zone in the data; check the Wowhead link. All levels: {BASE}ai/quest-starters.md"]
+                Q += [f"- **{it['name']}** (req {it['required_level']}{era(it['id'])}) · [Wowhead]({WH}{it['id']}) · "
+                      f"starts {quest_label(it['starts_quest'])}" for it in near[:25]]
             write(f"ai/{cslug}/{lv}-quests.md", "\n".join(Q) + footer)
+
+    # ------------------------------------------------------------ quest-starting items
+    starters = [it for it in items.values() if it.get("starts_quest")]
+    writs = [it for it in starters if it["name"].startswith("Craftsman's Writ")]
+    starters = [it for it in starters if not it["name"].startswith("Craftsman's Writ")]
+    bands = [(0, 1, "no level requirement")] + [(a, a + 9, f"level {a}-{a + 9}") for a in (1, 11, 21, 31, 41, 51)]
+    bands[1] = (2, 10, "level 2-10")
+    band_links = []
+    for lo, hi, label in bands:
+        lst = sorted([it for it in starters if lo <= (it["required_level"] or 0) <= hi],
+                     key=lambda i: (i["required_level"] or 0, -i["id"]))
+        fname = f"ai/quest-starters/{slug(label)}.md"
+        band_links.append((label, len(lst), fname))
+        L = [f"# Items that begin a quest: {label}", "",
+             "Picking up or looting one of these starts a quest (\"This Item Begins a Quest\"). Many are "
+             "hidden quests with no quest giver. \"New in WoW Forever\" items come from the game files: "
+             "their quest names, zones and drop sources aren't in this data yet, so check the Wowhead "
+             "quest link. \"Season of Discovery era\" items are leftovers in the game files and may not be "
+             "available in WoW Forever. Required level is the level needed to use the item.", ""]
+        for it in lst:
+            line = (f"- **{it['name']}** (req {it['required_level'] or '-'}{era(it['id'])}) · "
+                    f"item [Wowhead]({WH}{it['id']}) · "
+                    f"starts {quest_label(it['starts_quest'])}")
+            if it.get("description"):
+                line += f". \"{it['description'][:140]}\""
+            if it.get("source_summary"):
+                line += f". Get: {it['source_summary'][:160]}"
+            L.append(line)
+        if not lst:
+            L.append("None in the data.")
+        write(fname, "\n".join(L) + footer)
+    L = ["# Craftsman's Writs (crafting order quests)", "",
+         f"{len(writs)} items. Each starts a crafting-order quest: make the requested item and deliver it for "
+         "a reward. All need level 10.", ""]
+    L += [f"- {it['name']} · item [Wowhead]({WH}{it['id']}) · starts {quest_label(it['starts_quest'])}"
+          for it in sorted(writs, key=lambda i: i["name"])]
+    write("ai/quest-starters/craftsmans-writs.md", "\n".join(L) + footer)
+    L = ["# Items that begin a quest (hidden and item-started quests)", "",
+         f"{len(starters)} quest-starting items from the WoW Forever game files, plus {len(writs)} Craftsman's "
+         "Writs. Pick a level range. The game files don't say which zone a new Forever quest belongs to; "
+         "use the level, the item's name and description, and its Wowhead quest link.", ""]
+    L += [f"- [{label}]({BASE}{fname}) ({n} items)" for label, n, fname in band_links]
+    L.append(f"- [Craftsman's Writs]({BASE}ai/quest-starters/craftsmans-writs.md) ({len(writs)} items)")
+    write("ai/quest-starters.md", "\n".join(L) + footer)
 
     # ------------------------------------------------------------ llms.txt
     L = ["# WoW Forever Armory",
@@ -469,6 +541,9 @@ def main():
          "2. One item: open its item page (linked from every list, or find it in the name index below) "
          "for full stats, every source and drop chances.",
          "3. A dungeon, raid or zone: open the zone list and then that zone's page for bosses and loot.",
+         "3b. Hidden or item-started quests (\"This Item Begins a Quest\"): open " + f"{BASE}ai/quest-starters.md"
+         + " and pick the level range. New WoW Forever ones don't have a zone in the data, so match by "
+         "level and name and check the Wowhead quest link.",
          "4. Rankings use rough stat values for a typical build. Adjust for the player's spec, faction "
          "(quest rewards show Alliance/Horde/Both) and what they can realistically get. Prefer items "
          "with a known source. Hunters care most about their ranged weapon; melee weapons are mainly "
@@ -483,6 +558,7 @@ def main():
          ""]
     L += [f"- [{c}]({BASE}ai/{c.lower()}.md): weapon/armor rules and links to levels 1-60" for c in CLASSES]
     L += ["", "## Zones and dungeons", "", f"- [All zones, dungeons and raids with notable loot]({BASE}ai/zones.md)",
+          f"- [Items that begin a quest (hidden quests), by level]({BASE}ai/quest-starters.md)",
           "", "## Find an item by name", ""]
     L += [f"- [{k.upper() if k != '0' else '0-9 and symbols'}]({BASE}ai/names/{k}.md)" for k in letters]
     L += ["", "## Raw data (for code, not for reading)", "",

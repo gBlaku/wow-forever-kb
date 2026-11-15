@@ -452,6 +452,7 @@ select:focus-visible, input:focus-visible, button:focus-visible, .row:focus-visi
     if (it.mask > 0 && it.cl) L.push(`<div>Classes: ${esc(it.cl)}</div>`);
     if (it.req) L.push(`<div>Requires Level ${it.req}</div>`);
     if (it.rep) L.push(`<div>Requires ${esc(it.rep)}</div>`);
+    if (it.startsQuest) L.push(`<div class="t-gold">This Item Begins a Quest</div>`);
     for (const g of green) L.push(`<div class="t-green">Equip: +${esc(String(g).replace(/^\+/, ""))}</div>`);
     if (it.fx) for (const e of it.fx.split(" | ")) L.push(`<div class="t-green">${esc(e)}</div>`);
     if (it.set) L.push(`<div class="gap"></div><div class="t-set">Part of set: ${esc(it.set)}</div>`);
@@ -461,11 +462,12 @@ select:focus-visible, input:focus-visible, button:focus-visible, .row:focus-visi
     d.classList.remove("idle");
     const how = it.src
       ? it.src.split(" | ").map((p) => { const i = p.indexOf(": "); return i > 0 ? `<div><b>${esc(p.slice(0, i))}:</b> ${esc(p.slice(i + 2))}</div>` : `<div>${esc(p)}</div>`; }).join("")
-      : `<div>${it.id >= 200000 ? "New WoW Forever item. Its source isn't in the quest and drop database yet." : "Source not known."} Check Wowhead.</div>`;
+      : `<div>${it.id >= 240000 ? "New WoW Forever item. Its source isn't in the quest and drop database yet." : it.id >= 200000 ? "Added after Classic (Season of Discovery era); it may not be in WoW Forever." : "Source not known."} Check Wowhead.</div>`;
     const lvlNote = it.req > 1 ? "" : `<div class="note">No level requirement. Meant for about level ${it.lvl}${it.srcTypes ? " (from its source)" : " (from item level)"}.</div>`;
     d.innerHTML = `<div class="tip" role="region" aria-label="${esc(it.name)} tooltip">${L.join("")}</div>
       ${it.est ? `<div class="estNote">Blizzard hasn't published this item's WoW Forever stats yet. Name, level and stats are from Classic; damage and armor use the Forever formulas. The real item may differ.</div>` : ""}<div class="howto"><div class="lbl">How to get it</div>${how}</div>${lvlNote}
       <div class="links"><a href="https://www.wowhead.com/forever/item=${it.id}" target="_blank" rel="noopener">Open on Wowhead</a>
+      ${it.startsQuest ? `<a href="https://www.wowhead.com/forever/quest=${it.startsQuest}" target="_blank" rel="noopener">Quest it starts</a>` : ""}
       <span>Item ID ${it.id}</span><button type="button" class="btn closeSheet" id="closeSheet">Close</button></div>
       ${it.approx ? `<div class="note">This weapon has hand-tuned damage. Check Wowhead for exact numbers.</div>` : ""}
       `;

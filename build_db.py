@@ -269,7 +269,7 @@ def main():
         speed REAL, min_damage INTEGER, max_damage INTEGER, dps REAL, dps_approx INTEGER,
         armor INTEGER, {stat_cols}, other_stats TEXT,
         effects TEXT, item_set TEXT, required_reputation TEXT,
-        sell_price_copper INTEGER, buy_price_copper INTEGER, rep_rank TEXT,
+        sell_price_copper INTEGER, buy_price_copper INTEGER, rep_rank TEXT, starts_quest INTEGER,
         description TEXT, wowhead TEXT, estimated INTEGER);
     CREATE TABLE proficiency (class TEXT, subclass TEXT);
     CREATE TABLE armor_proficiency (class TEXT, armor TEXT, from_level INTEGER);
@@ -326,7 +326,7 @@ def main():
                   "Description_lang": cl["description"] or "",
                   "MinFactionID": str(cl["required_reputation_faction"] or 0),
                   "MinReputation": cl["required_reputation_rank"], "ItemDelay": cl["delay"],
-                  "BuyPrice": cl["buy_price"],
+                  "BuyPrice": cl["buy_price"], "StartQuestID": cl["start_quest"],
                   "DmgVariance": 0.4 if (inv == 17 or scid in (1, 5, 6, 8, 10, 17, 18, 20)) else 0.6,
                   "Flags_1": 0, "QualityModifier": 0}
             for k in range(10):
@@ -345,6 +345,7 @@ def main():
                  bonding=BONDING.get(int(sp["Bonding"]), ""),
                  is_unique=1 if sp["MaxCount"] == "1" else 0,
                  sell_price_copper=int(sp["SellPrice"]), buy_price_copper=int(sp["BuyPrice"] or 0),
+                 starts_quest=int(sp["StartQuestID"] or 0) or None,
                  description=sp["Description_lang"],
                  item_set=set_of_item.get(iid), estimated=1 if cl else 0)
         if cl:

@@ -11,7 +11,7 @@ STATS = ["agility", "strength", "stamina", "intellect", "spirit", "attack_power"
          "bonus_armor", "fire_res", "frost_res", "nature_res", "shadow_res", "arcane_res"]
 FIELDS = ["id", "name", "q", "ilvl", "req", "ic", "sub", "slot", "mask", "bind", "uniq",
           "speed", "min", "max", "dps", "approx", "armor", "st", "other", "fx", "set", "rep",
-          "desc", "sell", "src", "srcTypes", "lvl", "est"]
+          "desc", "sell", "src", "srcTypes", "lvl", "est", "startsQuest"]
 QUEST_FIELDS = ["id", "name", "qlvl", "req", "faction", "classes", "zone", "from", "to", "rewards"]
 
 
@@ -29,7 +29,7 @@ def main():
                      r["dps_approx"], r["armor"], st, r["other_stats"], r["effects"],
                      r["item_set"], r["required_reputation"], r["description"] or None,
                      r["sell_price_copper"], r["source_summary"], r["source_types"], r["level_hint"],
-                     r["estimated"] or 0])
+                     r["estimated"] or 0, r["starts_quest"]])
     item_ids = {r[0] for r in rows}
     rewards = {}
     for qid, iid in con.execute("SELECT source_id, item_id FROM item_sources WHERE kind='quest'"):
