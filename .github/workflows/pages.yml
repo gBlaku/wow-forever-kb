@@ -32,6 +32,7 @@ jobs:
         run: |
           python export_web.py
           python export_api.py
+          python export_ai.py
       - name: Smoke test
         run: python query.py --class hunter --level 40 --slot one-hand --limit 3
       - uses: actions/configure-pages@v5

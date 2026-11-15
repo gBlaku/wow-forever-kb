@@ -96,6 +96,9 @@ select:focus-visible, input:focus-visible, button:focus-visible, .row:focus-visi
 .foot { color: var(--muted); font-size: 12.5px; max-width: 75ch; display: grid; gap: 6px }
 .foot strong { color: var(--fg) }
 .loading { padding: 40px 14px; text-align: center; color: var(--muted) }
+.aiNote { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 13px; color: var(--muted); background: var(--accent-soft); border-radius: var(--radius); padding: 8px 12px }
+.aiNote strong { color: var(--fg) }
+.aiNote code { font-size: 12.5px; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 2px 6px; overflow-wrap: anywhere; user-select: all }
 .tabs { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--surface) }
 .tab { font: inherit; font-weight: 600; border: 0; background: transparent; color: var(--muted); padding: 7px 16px; cursor: pointer }
 .tab[aria-selected="true"] { background: var(--accent-soft); color: var(--accent) }
@@ -151,6 +154,12 @@ select:focus-visible, input:focus-visible, button:focus-visible, .row:focus-visi
     </div>
     <div class="meta" id="meta">Loading item data…</div>
   </header>
+
+  <div class="aiNote">
+    <span><strong>Ask Claude or ChatGPT instead:</strong> paste this link into your chat, then ask e.g. "best weapons for a level 40 hunter".</span>
+    <code id="aiLink">https://gblaku.github.io/wow-forever-kb/llms.txt</code>
+    <button type="button" class="chip" id="copyAi">Copy link</button>
+  </div>
 
   <form class="filters" id="filters" autocomplete="off">
     <div class="field wide"><label for="f-name" id="f-name-label">Item, boss or zone</label><input type="text" id="f-name" placeholder="e.g. Ravager, Herod or Uldaman"></div>
@@ -475,6 +484,12 @@ select:focus-visible, input:focus-visible, button:focus-visible, .row:focus-visi
     applyFilters({ mode: p.mode || (b.dataset.preset === "reset" ? mode : "items"), name: "", cls: p.cls, level: p.level, minLevel: 0, slot: p.slot, type: p.type || "", quality: p.quality, stat: "", sort: p.sort });
     run();
   }));
+  $("copyAi").addEventListener("click", () => {
+    const b = $("copyAi"), text = $("aiLink").textContent;
+    const done = () => { b.textContent = "Copied"; setTimeout(() => (b.textContent = "Copy link"), 1500); };
+    const fallback = () => { const r = document.createRange(); r.selectNodeContents($("aiLink")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); b.textContent = "Press Ctrl+C"; };
+    try { navigator.clipboard.writeText(text).then(done, fallback); } catch (e) { fallback(); }
+  });
   $("tab-items").addEventListener("click", () => { setMode("items"); run(); });
   $("tab-quests").addEventListener("click", () => { setMode("quests"); run(); });
   $("more").addEventListener("click", showMore);

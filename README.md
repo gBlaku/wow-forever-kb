@@ -6,6 +6,8 @@ automatically every day.
 
 - **Search it:** https://gblaku.github.io/wow-forever-kb/
 - **Query it with SQL in your browser:** [open in Datasette Lite](https://lite.datasette.io/?url=https://gblaku.github.io/wow-forever-kb/wow_forever.db)
+- **Ask an AI:** paste https://gblaku.github.io/wow-forever-kb/llms.txt into Claude or ChatGPT, then
+  ask e.g. "best weapons for a level 40 hunter" or "what drops in Uldaman"
 - **Use it from code:** plain JSON and CSV files, listed [below](#data-api)
 
 ## For players
@@ -22,6 +24,22 @@ Open the [Armory](https://gblaku.github.io/wow-forever-kb/):
 
 Items marked **Classic data** are still hidden in the Forever client. Their stats come from Classic
 and may change.
+
+## For AI assistants
+
+[`llms.txt`](https://gblaku.github.io/wow-forever-kb/llms.txt) is the entry point. It explains the
+data and links to short Markdown pages an assistant can read in one go:
+
+- `ai/<class>.md`: weapon and armor rules, and links to levels 1-60
+- `ai/<class>/<level>.md`: best items per slot at that level, with stats and how to get each one,
+  plus quests with rewards ([example: hunter 40](https://gblaku.github.io/wow-forever-kb/ai/hunter/40.md))
+- `ai/item/<id>.md`: one item, with every source, drop chance and Wowhead link
+- `ai/zones.md` and `ai/zone/<name>.md`: dungeons, raids and zones, with their bosses and loot
+- `ai/names/<letter>.md`: item name index
+
+Every link is written out in full because AI browsing tools only open URLs they have already seen.
+Rankings use rough per-class stat values (listed on each class page), so the assistant should
+adjust for the player's spec.
 
 ## Data API
 
@@ -103,6 +121,7 @@ python download_data.py   # game tables, Questie and vmangos data (about 70 MB)
 python build_db.py        # builds wow_forever.db
 python export_web.py      # data for the page
 python export_api.py      # site/ folder: page + API files
+python export_ai.py       # site/llms.txt + site/ai/ pages for AI assistants
 python query.py --class hunter --level 40 --slot one-hand
 python query.py --quests --class hunter --faction horde --level 40
 python query.py --name "Ravager"
